@@ -15,9 +15,7 @@ func NewReader(r io.ReadSeeker) *Reader {
 
 func (r *Reader) Index() (Index, error) {
 	i := make(Index, 0)
-	_, err := i.Read(r.r)
-
-	return i, err
+	return i, i.ReadFrom(r.r)
 }
 
 func (r *Reader) Seek(e *IndexEntry) (int64, error) {

@@ -5,60 +5,71 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-	"os"
 	"time"
 )
 
 var (
 	IndexSignature = []byte{'I', 'B', 'A'}
 
-	ErrInvalidIndexEntry = errors.New("invalid index entry")
-	ErrInvalidSignature  = errors.New("invalid signature")
+	ErrInvalidIndexEntry       = errors.New("invalid index entry")
+	ErrInvalidSignature        = errors.New("invalid signature")
+	ErrUnsupportedIndexVersion = errors.New("unsupported index version")
+	ErrCRC32Missmatch          = errors.New("crc32 missmatch")
 )
 
-const indexFooterSize = 20
+const (
+	IndexVersion    uint8 = 1
+	indexFooterSize       = 20
+)
 
 type Index []*IndexEntry
 
-func (i *Index) Read(r io.ReadSeeker) (n int64, err error) {
+func (i *Index) ReadFrom(r io.ReadSeeker) (err error) {
 	if _, err := r.Seek(-indexFooterSize, io.SeekEnd); err != nil {
-		return -1, err
+		return err
 	}
 
 	f, err := i.readFooter(r)
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	_, err = r.Seek(-int64(f.Size)-indexFooterSize, io.SeekEnd)
-	if err != nil {
-		return 0, err
+	startingPos := int64(f.Size) + indexFooterSize
+	if _, err := r.Seek(-startingPos, io.SeekCurrent); err != nil {
+		return err
 	}
 
-	n += int64(len(IndexSignature))
-	if err := i.readSignature(r); err != nil {
-		return 0, err
-	}
-
-	b, err := i.readEntries(r, f)
-	n += b
-	if err != nil {
-		return 0, err
-	}
-
-	return
+	return i.readIndex(r, f)
 }
 
-func (i Index) readFooter(r io.Reader) (*IndexFooter, error) {
+func (i *Index) readFooter(r io.Reader) (*IndexFooter, error) {
 	f := &IndexFooter{}
-	if _, err := f.ReadFrom(r); err != nil {
+	if err := f.ReadFrom(r); err != nil {
 		return nil, err
 	}
 
 	return f, nil
 }
 
-func (i Index) readSignature(r io.Reader) error {
+func (i *Index) readIndex(r io.Reader, f *IndexFooter) error {
+	hr := newHashedReader(r)
+
+	if err := i.readSignature(hr); err != nil {
+		return err
+	}
+
+	if err := i.readEntries(hr, f); err != nil {
+		return err
+	}
+
+	if f.CRC32 != hr.Checkshum() {
+		return ErrCRC32Missmatch
+	}
+
+	return nil
+}
+
+func (i *Index) readSignature(r io.Reader) error {
 	sig := make([]byte, 3)
 	if _, err := r.Read(sig); err != nil {
 		return err
@@ -68,55 +79,61 @@ func (i Index) readSignature(r io.Reader) error {
 		return ErrInvalidSignature
 	}
 
+	var version uint8
+	if err := binary.Read(r, binary.BigEndian, &version); err != nil {
+		return err
+	}
+
+	if version != IndexVersion {
+		return ErrUnsupportedIndexVersion
+	}
+
 	return nil
 }
 
-func (i Index) readEntries(r io.Reader, f *IndexFooter) (n int64, err error) {
+func (i *Index) readEntries(r io.Reader, f *IndexFooter) error {
 	for j := 0; j < int(f.EntryCount); j++ {
+
 		e := &IndexEntry{}
-		b, err := e.ReadFrom(r)
-		n += b
-
-		if err != nil {
-			return 0, err
+		if err := e.ReadFrom(r); err != nil {
+			return err
 		}
 
-		i = append(i, e)
+		*i = append(*i, e)
 	}
 
-	return
+	return nil
 }
 
-func (i Index) WriteTo(w io.Writer) (int64, error) {
+func (i *Index) WriteTo(w io.Writer) error {
+	hw := newHashedWriter(w)
+
 	f := &IndexFooter{
-		EntryCount: uint32(len(i)),
+		EntryCount: uint32(len(*i)),
 	}
 
-	var size uint64
-	n, err := w.Write(IndexSignature)
-	if err != nil {
-		return 0, err
+	if _, err := hw.Write(IndexSignature); err != nil {
+		return err
 	}
 
-	size += uint64(n)
+	if err := binary.Write(hw, binary.BigEndian, IndexVersion); err != nil {
+		return err
+	}
 
-	for _, e := range i {
-		n, err := e.WriteTo(w)
-		size += uint64(n)
-
-		if err != nil {
-			return int64(n), err
+	for _, e := range *i {
+		if err := e.WriteTo(hw); err != nil {
+			return err
 		}
 	}
 
-	f.Size = size
-	return f.WriteTo(w)
-}
+	f.Size = uint64(hw.Position())
+	f.CRC32 = hw.Checkshum()
 
-type Header struct {
-	Name    string
-	ModTime time.Time
-	Mode    os.FileMode
+	if err := f.WriteTo(hw); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type IndexEntry struct {
@@ -126,76 +143,53 @@ type IndexEntry struct {
 	CRC32 uint32
 }
 
-var nonVarIndexValues = int64(4) + 8 + 8 + 8 + 4
-
-func (e *IndexEntry) WriteTo(w io.Writer) (n int64, err error) {
+func (e *IndexEntry) WriteTo(w io.Writer) error {
 	if e.Name == "" || e.Size == 0 {
-		return 0, ErrInvalidIndexEntry
+		return ErrInvalidIndexEntry
 	}
-
-	var written int64
 
 	name := []byte(e.Name)
 	length := uint32(len(name))
 	if err := binary.Write(w, binary.BigEndian, length); err != nil {
-		return 0, err
+		return err
 	}
 
-	written += 4 + int64(length) //len of name size and name
 	if _, err := w.Write(name); err != nil {
-		return 0, err
+		return err
 	}
 
-	var data = []interface{}{
+	return writeBinary(w, []interface{}{
 		e.Mode,
 		e.ModTime.UnixNano(),
 		e.Start,
 		e.Size,
 		e.CRC32,
-	}
-
-	for _, v := range data {
-		err := binary.Write(w, binary.BigEndian, v)
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	written += nonVarIndexValues //size of data values
-	return written, nil
+	})
 }
 
-func (e *IndexEntry) ReadFrom(r io.Reader) (n int64, err error) {
+func (e *IndexEntry) ReadFrom(r io.Reader) error {
 	var length uint32
 	if err := binary.Read(r, binary.BigEndian, &length); err != nil {
-		return 0, err
+		return err
 	}
 
 	filename := make([]byte, length)
 	if _, err := r.Read(filename); err != nil {
-		return 0, err
+		return err
 	}
 
-	e.Name = string(filename)
-
 	var nsec int64
-	var data = []interface{}{
+	err := readBinary(r, []interface{}{
 		&e.Mode,
 		&nsec,
 		&e.Start,
 		&e.Size,
 		&e.CRC32,
-	}
+	})
 
-	for _, v := range data {
-		err := binary.Read(r, binary.BigEndian, v)
-		if err != nil {
-			return 0, err
-		}
-	}
-
+	e.Name = string(filename)
 	e.ModTime = time.Unix(0, nsec)
-	return int64(length) + 2 + nonVarIndexValues, nil
+	return err
 }
 
 type IndexFooter struct {
@@ -205,38 +199,42 @@ type IndexFooter struct {
 	PreviousIndex uint32
 }
 
-func (f *IndexFooter) ReadFrom(r io.Reader) (int64, error) {
-	var data = []interface{}{
+func (f *IndexFooter) ReadFrom(r io.Reader) error {
+	return readBinary(r, []interface{}{
 		&f.EntryCount,
 		&f.Size,
 		&f.CRC32,
 		&f.PreviousIndex,
-	}
-
-	for _, v := range data {
-		err := binary.Read(r, binary.BigEndian, v)
-		if err != nil {
-			return 0, err
-		}
-	}
-
-	return indexFooterSize, nil
+	})
 }
 
-func (f *IndexFooter) WriteTo(w io.Writer) (int64, error) {
-	var data = []interface{}{
+func (f *IndexFooter) WriteTo(w io.Writer) error {
+	return writeBinary(w, []interface{}{
 		f.EntryCount,
 		f.Size,
 		f.CRC32,
 		f.PreviousIndex,
-	}
+	})
+}
 
+func writeBinary(w io.Writer, data []interface{}) error {
 	for _, v := range data {
 		err := binary.Write(w, binary.BigEndian, v)
 		if err != nil {
-			return 0, err
+			return err
 		}
 	}
 
-	return indexFooterSize, nil
+	return nil
+}
+
+func readBinary(r io.Reader, data []interface{}) error {
+	for _, v := range data {
+		err := binary.Read(r, binary.BigEndian, v)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

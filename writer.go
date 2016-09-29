@@ -70,7 +70,5 @@ func (w *Writer) flushIfPending() {
 
 func (w *Writer) Close() error {
 	w.flushIfPending()
-
-	_, err := w.index.WriteTo(w.w)
-	return err
+	return w.index.WriteTo(w.w)
 }
