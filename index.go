@@ -19,13 +19,22 @@ var (
 
 const (
 	IndexVersion    uint8 = 1
-	indexFooterSize       = 20
+	indexFooterSize       = 24
 )
 
 type Index []*IndexEntry
 
-func (i *Index) ReadFrom(r io.ReadSeeker) (err error) {
-	if _, err := r.Seek(-indexFooterSize, io.SeekEnd); err != nil {
+func (i *Index) ReadFrom(r io.ReadSeeker) error {
+	current, err := r.Seek(0, io.SeekEnd)
+	if err != nil {
+		return err
+	}
+
+	return i.readFrom(r, current)
+}
+
+func (i *Index) readFrom(r io.ReadSeeker, offset int64) error {
+	if _, err := r.Seek(offset-indexFooterSize, io.SeekStart); err != nil {
 		return err
 	}
 
@@ -39,7 +48,15 @@ func (i *Index) ReadFrom(r io.ReadSeeker) (err error) {
 		return err
 	}
 
-	return i.readIndex(r, f)
+	if err := i.readIndex(r, f); err != nil {
+		return err
+	}
+
+	if f.PreviousBlock == 0 {
+		return nil
+	}
+
+	return i.readFrom(r, int64(f.PreviousBlock))
 }
 
 func (i *Index) readFooter(r io.Reader) (*IndexFooter, error) {
@@ -105,11 +122,12 @@ func (i *Index) readEntries(r io.Reader, f *IndexFooter) error {
 	return nil
 }
 
-func (i *Index) WriteTo(w io.Writer) error {
+func (i *Index) WriteTo(w io.Writer, previousBlock uint64) error {
 	hw := newHashedWriter(w)
 
 	f := &IndexFooter{
-		EntryCount: uint32(len(*i)),
+		EntryCount:    uint32(len(*i)),
+		PreviousBlock: previousBlock,
 	}
 
 	if _, err := hw.Write(IndexSignature); err != nil {
@@ -196,7 +214,7 @@ type IndexFooter struct {
 	EntryCount    uint32
 	Size          uint64
 	CRC32         uint32
-	PreviousIndex uint32
+	PreviousBlock uint64
 }
 
 func (f *IndexFooter) ReadFrom(r io.Reader) error {
@@ -204,7 +222,7 @@ func (f *IndexFooter) ReadFrom(r io.Reader) error {
 		&f.EntryCount,
 		&f.Size,
 		&f.CRC32,
-		&f.PreviousIndex,
+		&f.PreviousBlock,
 	})
 }
 
@@ -213,7 +231,7 @@ func (f *IndexFooter) WriteTo(w io.Writer) error {
 		f.EntryCount,
 		f.Size,
 		f.CRC32,
-		f.PreviousIndex,
+		f.PreviousBlock,
 	})
 }
 

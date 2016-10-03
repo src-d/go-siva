@@ -16,7 +16,7 @@ func (s *IndexSuite) TestIndexFooterIdempotent(c *C) {
 		EntryCount:    2,
 		Size:          42,
 		CRC32:         4242,
-		PreviousIndex: 84,
+		PreviousBlock: 84,
 	}
 
 	buf := bytes.NewBuffer(nil)
@@ -61,7 +61,7 @@ func (s *IndexSuite) TestIndexIdempotent(c *C) {
 	expected = append(expected, e)
 
 	buf := bytes.NewBuffer(nil)
-	err := expected.WriteTo(buf)
+	err := expected.WriteTo(buf, 0)
 	c.Assert(err, IsNil)
 
 	index := make(Index, 0)

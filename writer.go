@@ -9,28 +9,34 @@ import (
 
 var (
 	ErrMissingHeader = errors.New("WriteHeader was not called, or already flushed")
+	ErrClosedWriter  = errors.New("Writer is closed")
 )
 
 type Writer struct {
-	w io.Writer
-
+	w        io.Writer
 	position uint64
+	previous uint64
 	index    Index
 	current  *IndexEntry
 	hasher   hash.Hash32
+	closed   bool
 }
 
-func NewWriter(w io.Writer) *Writer {
+func NewWriter(w io.Writer, size uint64) *Writer {
 	crc := crc32.NewIEEE()
 
 	return &Writer{
-		w:      io.MultiWriter(w, crc),
-		hasher: crc,
+		w:        io.MultiWriter(w, crc),
+		position: size,
+		previous: size,
+		hasher:   crc,
 	}
 }
 
 func (w *Writer) WriteHeader(h *Header) error {
-	w.flushIfPending()
+	if err := w.flushIfPending(); err != nil {
+		return err
+	}
 
 	w.current = &IndexEntry{
 		Header: (*h),
@@ -49,6 +55,10 @@ func (w *Writer) Write(b []byte) (int, error) {
 }
 
 func (w *Writer) Flush() error {
+	if w.closed {
+		return ErrClosedWriter
+	}
+
 	if w.current == nil {
 		return ErrMissingHeader
 	}
@@ -60,15 +70,24 @@ func (w *Writer) Flush() error {
 	return nil
 }
 
-func (w *Writer) flushIfPending() {
-	if w.current == nil {
-		return
+func (w *Writer) flushIfPending() error {
+	if w.closed {
+		return ErrClosedWriter
 	}
 
-	w.Flush()
+	if w.current == nil {
+		return nil
+	}
+
+	return w.Flush()
 }
 
 func (w *Writer) Close() error {
-	w.flushIfPending()
-	return w.index.WriteTo(w.w)
+	defer func() { w.closed = true }()
+
+	if err := w.flushIfPending(); err != nil {
+		return err
+	}
+
+	return w.index.WriteTo(w.w, w.previous)
 }
