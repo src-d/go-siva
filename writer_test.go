@@ -13,65 +13,85 @@ type WriterSuite struct{}
 
 var _ = Suite(&WriterSuite{})
 
+func (s *WriterSuite) TestWriteEmpty(c *C) {
+	buf := new(bytes.Buffer)
+	w := NewWriter(buf, 0)
+	err := w.Close()
+	c.Assert(err, Equals, nil)
+	c.Assert(buf.Len(), Equals, 0)
+}
+
+func (s *WriterSuite) TestCloseTwice(c *C) {
+	buf := new(bytes.Buffer)
+	w := NewWriter(buf, 0)
+	err := w.Close()
+	c.Assert(err, Equals, nil)
+
+	err = w.Close()
+	c.Assert(err, Equals, ErrClosedWriter)
+}
+
+func (s *WriterSuite) TestFlushWithoutHeader(c *C) {
+	buf := new(bytes.Buffer)
+	w := NewWriter(buf, 0)
+	err := w.Flush()
+	c.Assert(err, Equals, ErrMissingHeader)
+}
+
+func (s *WriterSuite) TestFlushOnClose(c *C) {
+	buf := new(bytes.Buffer)
+	w := NewWriter(buf, 0)
+	w.Close()
+
+	err := w.Flush()
+	c.Assert(err, Equals, ErrClosedWriter)
+}
+
 func (s *WriterSuite) TestWriterReaderIdempotent(c *C) {
 	buf := new(bytes.Buffer)
-	tw := NewWriter(buf, 0)
+	w := NewWriter(buf, 0)
 	for _, file := range files {
-		s.writeFixture(c, tw, file)
+		s.writeFixture(c, w, file)
 	}
 
-	err := tw.Close()
+	err := w.Close()
 	c.Assert(err, IsNil)
 
-	r := bytes.NewReader(buf.Bytes())
-	tr := NewReader(r)
-
-	index, err := tr.Index()
+	r := NewReader(bytes.NewReader(buf.Bytes()))
+	index, err := r.Index()
 	c.Assert(err, IsNil)
-	c.Assert(index, HasLen, 3)
-
-	for i, e := range index {
-		_, err := tr.Seek(e)
-		if err == io.EOF {
-			break
-		}
-
-		c.Assert(err, IsNil)
-		c.Assert(e.Name, Equals, files[i].Name)
-
-		content, err := ioutil.ReadAll(tr)
-		c.Assert(err, IsNil)
-		c.Assert(string(content), Equals, files[i].Body)
-	}
+	s.assertIndex(c, r, index)
 }
 
 func (s *WriterSuite) TestWriterReaderIdempotentMultiWrite(c *C) {
 	buf := new(bytes.Buffer)
-	tw := NewWriter(buf, 0)
-	for _, file := range files[1:] {
-		s.writeFixture(c, tw, file)
-	}
-
-	err := tw.Close()
-	c.Assert(err, IsNil)
-
-	tw = NewWriter(buf, uint64(buf.Len()))
+	w := NewWriter(buf, 0)
 	for _, file := range files[0:1] {
-		s.writeFixture(c, tw, file)
+		s.writeFixture(c, w, file)
 	}
 
-	err = tw.Close()
+	err := w.Close()
 	c.Assert(err, IsNil)
 
-	r := bytes.NewReader(buf.Bytes())
-	tr := NewReader(r)
+	w = NewWriter(buf, uint64(buf.Len()))
+	for _, file := range files[1:] {
+		s.writeFixture(c, w, file)
+	}
 
-	index, err := tr.Index()
+	err = w.Close()
 	c.Assert(err, IsNil)
+
+	r := NewReader(bytes.NewReader(buf.Bytes()))
+	index, err := r.Index()
+	c.Assert(err, IsNil)
+	s.assertIndex(c, r, index)
+}
+
+func (s *WriterSuite) assertIndex(c *C, r *Reader, index Index) {
 	c.Assert(index, HasLen, 3)
 
 	for i, e := range index {
-		_, err := tr.Seek(e)
+		_, err := r.Seek(e)
 		if err == io.EOF {
 			break
 		}
@@ -79,7 +99,7 @@ func (s *WriterSuite) TestWriterReaderIdempotentMultiWrite(c *C) {
 		c.Assert(err, IsNil)
 		c.Assert(e.Name, Equals, files[i].Name)
 
-		content, err := ioutil.ReadAll(tr)
+		content, err := ioutil.ReadAll(r)
 		c.Assert(err, IsNil)
 		c.Assert(string(content), Equals, files[i].Body)
 	}

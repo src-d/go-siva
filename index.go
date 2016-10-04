@@ -13,6 +13,7 @@ var (
 
 	ErrInvalidIndexEntry       = errors.New("invalid index entry")
 	ErrInvalidSignature        = errors.New("invalid signature")
+	ErrEmptyIndex              = errors.New("empty index")
 	ErrUnsupportedIndexVersion = errors.New("unsupported index version")
 	ErrCRC32Missmatch          = errors.New("crc32 missmatch")
 )
@@ -123,6 +124,10 @@ func (i *Index) readEntries(r io.Reader, f *IndexFooter) error {
 }
 
 func (i *Index) WriteTo(w io.Writer, previousBlock uint64) error {
+	if len(*i) == 0 {
+		return ErrEmptyIndex
+	}
+
 	hw := newHashedWriter(w)
 
 	f := &IndexFooter{
@@ -153,6 +158,10 @@ func (i *Index) WriteTo(w io.Writer, previousBlock uint64) error {
 
 	return nil
 }
+
+func (s Index) Len() int           { return len(s) }
+func (s Index) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s Index) Less(i, j int) bool { return s[i].Start < s[j].Start }
 
 type IndexEntry struct {
 	Header

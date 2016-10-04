@@ -1,6 +1,9 @@
 package iba
 
-import "io"
+import (
+	"io"
+	"sort"
+)
 
 type Reader struct {
 	r io.ReadSeeker
@@ -15,7 +18,12 @@ func NewReader(r io.ReadSeeker) *Reader {
 
 func (r *Reader) Index() (Index, error) {
 	i := make(Index, 0)
-	return i, i.ReadFrom(r.r)
+	if err := i.ReadFrom(r.r); err != nil {
+		return i, err
+	}
+
+	sort.Sort(i)
+	return i, nil
 }
 
 func (r *Reader) Seek(e *IndexEntry) (int64, error) {

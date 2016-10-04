@@ -89,5 +89,10 @@ func (w *Writer) Close() error {
 		return err
 	}
 
-	return w.index.WriteTo(w.w, w.previous)
+	err := w.index.WriteTo(w.w, w.previous)
+	if err == ErrEmptyIndex {
+		return nil
+	}
+
+	return err
 }

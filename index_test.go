@@ -2,6 +2,7 @@ package iba
 
 import (
 	"bytes"
+	"sort"
 	"time"
 
 	. "gopkg.in/check.v1"
@@ -10,6 +11,20 @@ import (
 type IndexSuite struct{}
 
 var _ = Suite(&IndexSuite{})
+
+func (s *IndexSuite) TestIndexWriteToEmpty(c *C) {
+	i := make(Index, 0)
+	err := i.WriteTo(nil, 0)
+	c.Assert(err, Equals, ErrEmptyIndex)
+}
+
+func (s *IndexSuite) TestIndexSort(c *C) {
+	i := Index{{Start: 100}, {Start: 10}}
+	sort.Sort(i)
+
+	c.Assert(int(i[0].Start), Equals, 10)
+	c.Assert(int(i[1].Start), Equals, 100)
+}
 
 func (s *IndexSuite) TestIndexFooterIdempotent(c *C) {
 	expected := &IndexFooter{
