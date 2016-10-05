@@ -1,8 +1,14 @@
 package iba
 
 import (
+	"errors"
 	"io"
 	"sort"
+)
+
+var (
+	ErrPendingContent   = errors.New("entry wasn't fully read")
+	ErrInvalidCheckshum = errors.New("invalid checksum")
 )
 
 type Reader struct {
@@ -17,8 +23,13 @@ func NewReader(r io.ReadSeeker) *Reader {
 }
 
 func (r *Reader) Index() (Index, error) {
-	i := make(Index, 0)
-	if err := i.ReadFrom(r.r); err != nil {
+	endLastBlock, err := r.r.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	i, err := r.readIndex(uint64(endLastBlock))
+	if err != nil {
 		return i, err
 	}
 
@@ -26,11 +37,30 @@ func (r *Reader) Index() (Index, error) {
 	return i, nil
 }
 
+func (r *Reader) readIndex(offset uint64) (Index, error) {
+	i := make(Index, 0)
+	if err := i.ReadFrom(r.r, offset); err != nil {
+		return nil, err
+	}
+
+	if len(i) == 0 || i[0].absStart == 0 {
+		return i, nil
+	}
+
+	previ, err := r.readIndex(i[0].absStart)
+	if err != nil {
+		return nil, err
+	}
+
+	i = append(i, previ...)
+	return i, nil
+}
+
 func (r *Reader) Seek(e *IndexEntry) (int64, error) {
 	r.current = e
 	r.pending = e.Size
 
-	return r.r.Seek(int64(e.Start), io.SeekStart)
+	return r.r.Seek(int64(e.absStart), io.SeekStart)
 }
 
 func (r *Reader) Read(b []byte) (n int, err error) {

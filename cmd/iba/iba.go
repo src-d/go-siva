@@ -65,12 +65,7 @@ func (c *cmd) buildWriter(append bool) (err error) {
 		return fmt.Errorf("error creating file: %s", err)
 	}
 
-	fi, err := c.f.Stat()
-	if err != nil {
-		return err
-	}
-
-	c.w = iba.NewWriter(c.f, uint64(fi.Size()))
+	c.w = iba.NewWriter(c.f)
 	return nil
 }
 

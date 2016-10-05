@@ -15,7 +15,7 @@ var _ = Suite(&WriterSuite{})
 
 func (s *WriterSuite) TestWriteEmpty(c *C) {
 	buf := new(bytes.Buffer)
-	w := NewWriter(buf, 0)
+	w := NewWriter(buf)
 	err := w.Close()
 	c.Assert(err, Equals, nil)
 	c.Assert(buf.Len(), Equals, 0)
@@ -23,7 +23,7 @@ func (s *WriterSuite) TestWriteEmpty(c *C) {
 
 func (s *WriterSuite) TestCloseTwice(c *C) {
 	buf := new(bytes.Buffer)
-	w := NewWriter(buf, 0)
+	w := NewWriter(buf)
 	err := w.Close()
 	c.Assert(err, Equals, nil)
 
@@ -33,14 +33,14 @@ func (s *WriterSuite) TestCloseTwice(c *C) {
 
 func (s *WriterSuite) TestFlushWithoutHeader(c *C) {
 	buf := new(bytes.Buffer)
-	w := NewWriter(buf, 0)
+	w := NewWriter(buf)
 	err := w.Flush()
 	c.Assert(err, Equals, ErrMissingHeader)
 }
 
 func (s *WriterSuite) TestFlushOnClose(c *C) {
 	buf := new(bytes.Buffer)
-	w := NewWriter(buf, 0)
+	w := NewWriter(buf)
 	w.Close()
 
 	err := w.Flush()
@@ -49,7 +49,7 @@ func (s *WriterSuite) TestFlushOnClose(c *C) {
 
 func (s *WriterSuite) TestWriterReaderIdempotent(c *C) {
 	buf := new(bytes.Buffer)
-	w := NewWriter(buf, 0)
+	w := NewWriter(buf)
 	for _, file := range files {
 		s.writeFixture(c, w, file)
 	}
@@ -65,7 +65,7 @@ func (s *WriterSuite) TestWriterReaderIdempotent(c *C) {
 
 func (s *WriterSuite) TestWriterReaderIdempotentMultiWrite(c *C) {
 	buf := new(bytes.Buffer)
-	w := NewWriter(buf, 0)
+	w := NewWriter(buf)
 	for _, file := range files[0:1] {
 		s.writeFixture(c, w, file)
 	}
@@ -73,7 +73,7 @@ func (s *WriterSuite) TestWriterReaderIdempotentMultiWrite(c *C) {
 	err := w.Close()
 	c.Assert(err, IsNil)
 
-	w = NewWriter(buf, uint64(buf.Len()))
+	w = NewWriter(buf)
 	for _, file := range files[1:] {
 		s.writeFixture(c, w, file)
 	}
@@ -98,7 +98,6 @@ func (s *WriterSuite) assertIndex(c *C, r *Reader, index Index) {
 
 		c.Assert(err, IsNil)
 		c.Assert(e.Name, Equals, files[i].Name)
-
 		content, err := ioutil.ReadAll(r)
 		c.Assert(err, IsNil)
 		c.Assert(string(content), Equals, files[i].Body)

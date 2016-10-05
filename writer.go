@@ -2,8 +2,6 @@ package iba
 
 import (
 	"errors"
-	"hash"
-	"hash/crc32"
 	"io"
 )
 
@@ -13,23 +11,16 @@ var (
 )
 
 type Writer struct {
-	w        io.Writer
-	position uint64
-	previous uint64
+	w        *hashedWriter
 	index    Index
 	current  *IndexEntry
-	hasher   hash.Hash32
+	position uint64
 	closed   bool
 }
 
-func NewWriter(w io.Writer, size uint64) *Writer {
-	crc := crc32.NewIEEE()
-
+func NewWriter(w io.Writer) *Writer {
 	return &Writer{
-		w:        io.MultiWriter(w, crc),
-		position: size,
-		previous: size,
-		hasher:   crc,
+		w: newHashedWriter(w),
 	}
 }
 
@@ -64,8 +55,8 @@ func (w *Writer) Flush() error {
 	}
 
 	w.current.Size = w.position - w.current.Start
-	w.current.CRC32 = w.hasher.Sum32()
-	w.hasher.Reset()
+	w.current.CRC32 = w.w.Checkshum()
+	w.w.Reset()
 
 	return nil
 }
@@ -89,7 +80,7 @@ func (w *Writer) Close() error {
 		return err
 	}
 
-	err := w.index.WriteTo(w.w, w.previous)
+	err := w.index.WriteTo(w.w)
 	if err == ErrEmptyIndex {
 		return nil
 	}
