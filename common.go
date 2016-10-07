@@ -8,10 +8,18 @@ import (
 	"time"
 )
 
+type Flag uint32
+
+const (
+	//FlagDeleted should be used to identify when a file is deleted
+	FlagDeleted Flag = iota
+)
+
 type Header struct {
 	Name    string
 	ModTime time.Time
 	Mode    os.FileMode
+	Flags   Flag
 }
 
 type hashedWriter struct {

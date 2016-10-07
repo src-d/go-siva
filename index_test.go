@@ -52,6 +52,7 @@ func (s *IndexSuite) TestIndexEntryIdempotent(c *C) {
 	expected.Start = 84
 	expected.Size = 42
 	expected.CRC32 = 4242
+	expected.Flags = FlagDeleted
 
 	buf := bytes.NewBuffer(nil)
 	err := expected.WriteTo(buf)

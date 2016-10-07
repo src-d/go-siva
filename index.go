@@ -184,6 +184,7 @@ func (e *IndexEntry) WriteTo(w io.Writer) error {
 		e.Start,
 		e.Size,
 		e.CRC32,
+		e.Flags,
 	})
 }
 
@@ -205,6 +206,7 @@ func (e *IndexEntry) ReadFrom(r io.Reader) error {
 		&e.Start,
 		&e.Size,
 		&e.CRC32,
+		&e.Flags,
 	})
 
 	e.Name = string(filename)
