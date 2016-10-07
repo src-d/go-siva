@@ -6,13 +6,13 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/src-d/iba"
+	"github.com/src-d/siva"
 )
 
 type CmdPack struct {
 	cmd
 	Verbose bool `short:"v" description:"Activates the verbose mode"`
-	Append  bool `long:"append" description:"If append, the files are added to an existing iba file"`
+	Append  bool `long:"append" description:"If append, the files are added to an existing siva file"`
 	Input   struct {
 		Files []string `positional-arg-name:"input" description:"files or directories to be add to the archive."`
 	} `positional-args:"yes"`
@@ -83,7 +83,7 @@ func (c *CmdPack) packFile(fullpath string, fi os.FileInfo) error {
 		fmt.Println(fullpath)
 	}
 
-	h := &iba.Header{
+	h := &siva.Header{
 		Name:    cleanPath(fullpath),
 		Mode:    fi.Mode(),
 		ModTime: fi.ModTime(),

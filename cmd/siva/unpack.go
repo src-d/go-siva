@@ -8,7 +8,7 @@ import (
 	"regexp"
 
 	humanize "github.com/dustin/go-humanize"
-	"github.com/src-d/iba"
+	"github.com/src-d/siva"
 )
 
 const writeFlagsDefault = os.O_WRONLY | os.O_CREATE | os.O_TRUNC | os.O_EXCL
@@ -97,7 +97,7 @@ func (c *CmdUnpack) do() error {
 	return nil
 }
 
-func (c *CmdUnpack) extract(entry *iba.IndexEntry) error {
+func (c *CmdUnpack) extract(entry *siva.IndexEntry) error {
 	if _, err := c.r.Seek(entry); err != nil {
 		return err
 	}

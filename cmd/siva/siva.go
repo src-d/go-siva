@@ -5,11 +5,11 @@ import (
 	"os"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/src-d/iba"
+	"github.com/src-d/siva"
 )
 
 func main() {
-	parser := flags.NewNamedParser("iba", flags.Default)
+	parser := flags.NewNamedParser("siva", flags.Default)
 	parser.AddCommand("pack", "Create a new archive containing the specified items.", "", &CmdPack{})
 	parser.AddCommand("unpack", "Extract to disk from the archive.", "", &CmdUnpack{})
 	parser.AddCommand("list", "List the items contained on a file.", "", &CmdList{})
@@ -27,17 +27,17 @@ func main() {
 
 type cmd struct {
 	Args struct {
-		File string `positional-arg-name:"iba-file" required:"true" description:"iba file."`
+		File string `positional-arg-name:"siva-file" required:"true" description:"siva file."`
 	} `positional-args:"yes"`
 
 	f *os.File
-	r *iba.Reader
-	w *iba.Writer
+	r *siva.Reader
+	w *siva.Writer
 }
 
 func (c *cmd) validate() error {
 	if c.Args.File == "" {
-		return fmt.Errorf("Missing .iba file, please provide a valid one.")
+		return fmt.Errorf("Missing .siva file, please provide a valid one.")
 	}
 	return nil
 }
@@ -48,7 +48,7 @@ func (c *cmd) buildReader() (err error) {
 		return fmt.Errorf("error opening file: %s", err)
 	}
 
-	c.r = iba.NewReader(c.f)
+	c.r = siva.NewReader(c.f)
 	return nil
 }
 
@@ -65,7 +65,7 @@ func (c *cmd) buildWriter(append bool) (err error) {
 		return fmt.Errorf("error creating file: %s", err)
 	}
 
-	c.w = iba.NewWriter(c.f)
+	c.w = siva.NewWriter(c.f)
 	return nil
 }
 

@@ -1,4 +1,4 @@
-package iba
+package siva 
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ var (
 	ErrInvalidReaderAt  = errors.New("reader provided doen't implements ReaderAt interface")
 )
 
-// A Reader provides random access to the contents of a shiva archive.
+// A Reader provides random access to the contents of a siva archive.
 type Reader struct {
 	r io.ReadSeeker
 
@@ -26,7 +26,7 @@ func NewReader(r io.ReadSeeker) *Reader {
 	return &Reader{r: r}
 }
 
-// Index reads the index of the shiva file from the provided reader
+// Index reads the index of the siva file from the provided reader
 func (r *Reader) Index() (Index, error) {
 	endLastBlock, err := r.r.Seek(0, io.SeekEnd)
 	if err != nil {
