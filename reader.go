@@ -9,8 +9,10 @@ import (
 var (
 	ErrPendingContent   = errors.New("entry wasn't fully read")
 	ErrInvalidCheckshum = errors.New("invalid checksum")
+	ErrInvalidReaderAt  = errors.New("reader provided doen't implements ReaderAt interface")
 )
 
+// A Reader provides random access to the contents of a shiva archive.
 type Reader struct {
 	r io.ReadSeeker
 
@@ -18,10 +20,13 @@ type Reader struct {
 	pending uint64
 }
 
+// NewReader creates a new Reader reading from r, reader requires be seekable
+// and optionally should implement io.ReaderAt to make usage of the Get method
 func NewReader(r io.ReadSeeker) *Reader {
 	return &Reader{r: r}
 }
 
+// Index reads the index of the shiva file from the provided reader
 func (r *Reader) Index() (Index, error) {
 	endLastBlock, err := r.r.Seek(0, io.SeekEnd)
 	if err != nil {
@@ -56,6 +61,19 @@ func (r *Reader) readIndex(offset uint64) (Index, error) {
 	return i, nil
 }
 
+// Get returns a new io.SectionReader allowing concurrent read access to the
+// content of the read
+func (r *Reader) Get(e *IndexEntry) (*io.SectionReader, error) {
+	ra, ok := r.r.(io.ReaderAt)
+	if !ok {
+		return nil, ErrInvalidReaderAt
+	}
+
+	return io.NewSectionReader(ra, int64(e.absStart), int64(e.Size)), nil
+}
+
+// Seek seek the internal reader to the starting position of the content for the
+// given IndexEntry
 func (r *Reader) Seek(e *IndexEntry) (int64, error) {
 	r.current = e
 	r.pending = e.Size
@@ -63,16 +81,18 @@ func (r *Reader) Seek(e *IndexEntry) (int64, error) {
 	return r.r.Seek(int64(e.absStart), io.SeekStart)
 }
 
-func (r *Reader) Read(b []byte) (n int, err error) {
+// Read reads up to len(p) bytes, starting at the current position set by Seek
+// and ending in the end of the content, retuning a io.EOF when its reached
+func (r *Reader) Read(p []byte) (n int, err error) {
 	if r.pending == 0 {
 		return 0, io.EOF
 	}
 
-	if uint64(len(b)) > r.pending {
-		b = b[0:r.pending]
+	if uint64(len(p)) > r.pending {
+		p = p[0:r.pending]
 	}
 
-	n, err = r.r.Read(b)
+	n, err = r.r.Read(p)
 	r.pending -= uint64(n)
 
 	if err == io.EOF && r.pending > 0 {

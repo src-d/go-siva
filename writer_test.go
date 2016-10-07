@@ -2,7 +2,6 @@ package iba
 
 import (
 	"bytes"
-	"io"
 	"io/ioutil"
 	"time"
 
@@ -91,13 +90,11 @@ func (s *WriterSuite) assertIndex(c *C, r *Reader, index Index) {
 	c.Assert(index, HasLen, 3)
 
 	for i, e := range index {
-		_, err := r.Seek(e)
-		if err == io.EOF {
-			break
-		}
-
-		c.Assert(err, IsNil)
 		c.Assert(e.Name, Equals, files[i].Name)
+
+		r, err := r.Get(e)
+		c.Assert(err, IsNil)
+
 		content, err := ioutil.ReadAll(r)
 		c.Assert(err, IsNil)
 		c.Assert(string(content), Equals, files[i].Body)
