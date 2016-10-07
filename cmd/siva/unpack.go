@@ -17,7 +17,6 @@ const defaultPerms = 0755
 
 type CmdUnpack struct {
 	cmd
-	Verbose     bool   `short:"v" description:"Activates the verbose mode"`
 	Overwrite   bool   `short:"o" description:"Overwrites the files if already exists"`
 	IgnorePerms bool   `short:"i" description:"Ignore files permisisions"`
 	Match       string `short:"m" description:"Only extract files matching the given regexp"`
@@ -55,7 +54,7 @@ func (c *CmdUnpack) validate() error {
 	}
 
 	if _, err := os.Stat(c.Args.File); err != nil {
-		return fmt.Errorf("Invalid input file %q, %s\n", c.Args.File, err.Error())
+		return fmt.Errorf("Invalid input file %q, %s\n", c.Args.File, err)
 	}
 
 	if c.Output.Path == "" {
@@ -67,16 +66,23 @@ func (c *CmdUnpack) validate() error {
 		c.flags = writeFlagsOverwrite
 	}
 
-	c.matchingFunc = func(string) bool { return true }
-	if c.Match != "" {
-		c.regexp, err = regexp.Compile(c.Match)
-		if err != nil {
-			return fmt.Errorf("Invalid match regexp %q, %s\n", c.Match, err.Error())
-		}
+	return c.buildMatchingFunc()
+}
 
-		c.matchingFunc = func(name string) bool {
-			return c.regexp.MatchString(name)
-		}
+func (c *CmdUnpack) buildMatchingFunc() error {
+	c.matchingFunc = func(string) bool { return true }
+	if c.Match == "" {
+		return nil
+	}
+
+	var err error
+	c.regexp, err = regexp.Compile(c.Match)
+	if err != nil {
+		return fmt.Errorf("Invalid match regexp %q, %s\n", c.Match, err.Error())
+	}
+
+	c.matchingFunc = func(name string) bool {
+		return c.regexp.MatchString(name)
 	}
 
 	return nil
@@ -98,14 +104,32 @@ func (c *CmdUnpack) do() error {
 }
 
 func (c *CmdUnpack) extract(entry *siva.IndexEntry) error {
-	if _, err := c.r.Seek(entry); err != nil {
+	src, err := c.r.Get(entry)
+	if err != nil {
 		return err
 	}
 
+	dst, err := c.createFile(entry)
+	if err != nil {
+		return nil
+	}
+
+	defer dst.Close()
+
+	if _, err := io.Copy(dst, src); err != nil {
+		return fmt.Errorf("unable to write %q : %s\n", entry.Name, err)
+	}
+
+	c.println(entry.Name, humanize.Bytes(entry.Size))
+	return nil
+}
+
+func (c *CmdUnpack) createFile(entry *siva.IndexEntry) (*os.File, error) {
 	dstName := filepath.Join(c.Output.Path, entry.Name)
+
 	dir := filepath.Dir(dstName)
 	if err := os.MkdirAll(dir, 0755); err != nil {
-		return fmt.Errorf("unable to create dir %q: %s\n", dir, err)
+		return nil, fmt.Errorf("unable to create dir %q: %s\n", dir, err)
 	}
 
 	perms := os.FileMode(defaultPerms)
@@ -115,18 +139,8 @@ func (c *CmdUnpack) extract(entry *siva.IndexEntry) error {
 
 	dst, err := os.OpenFile(dstName, c.flags, perms)
 	if err != nil {
-		return fmt.Errorf("unable to open %q for writing: %s\n", dstName, err)
+		return nil, fmt.Errorf("unable to open %q for writing: %s\n", dstName, err)
 	}
 
-	defer dst.Close()
-
-	if _, err := io.Copy(dst, c.r); err != nil {
-		return fmt.Errorf("unable to write %q : %s\n", dstName, err)
-	}
-
-	if c.Verbose {
-		fmt.Println(dstName, humanize.Bytes(entry.Size))
-	}
-
-	return nil
+	return dst, nil
 }

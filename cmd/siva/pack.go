@@ -5,15 +5,15 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"syscall"
 
 	"github.com/src-d/siva"
 )
 
 type CmdPack struct {
 	cmd
-	Verbose bool `short:"v" description:"Activates the verbose mode"`
-	Append  bool `long:"append" description:"If append, the files are added to an existing siva file"`
-	Input   struct {
+	Append bool `long:"append" description:"If append, the files are added to an existing siva file"`
+	Input  struct {
 		Files []string `positional-arg-name:"input" description:"files or directories to be add to the archive."`
 	} `positional-args:"yes"`
 }
@@ -66,6 +66,10 @@ func (c *CmdPack) pack() error {
 			return fmt.Errorf("Invalid input file/dir %q, no such file", file)
 		}
 
+		if !fi.Mode().IsRegular() {
+			continue
+		}
+
 		if err := c.packFile(file, fi); err != nil {
 			return err
 		}
@@ -75,14 +79,26 @@ func (c *CmdPack) pack() error {
 }
 
 func (c *CmdPack) packFile(fullpath string, fi os.FileInfo) error {
-	if !fi.Mode().IsRegular() {
+	if c.sameFile(c.fi, fi) {
+		fmt.Fprintf(os.Stderr,
+			"skipping %q, cannot archive the target file\n", fullpath)
 		return nil
 	}
 
-	if c.Verbose {
-		fmt.Println(fullpath)
+	c.println(fullpath)
+	if err := c.writeFileHeader(fullpath, fi); err != nil {
+		return nil
 	}
 
+	return c.writeFile(fullpath, fi)
+}
+
+func (c *CmdPack) sameFile(a, b os.FileInfo) bool {
+	// TODO: only works in linux
+	return a.Sys().(*syscall.Stat_t).Ino == b.Sys().(*syscall.Stat_t).Ino
+}
+
+func (c *CmdPack) writeFileHeader(fullpath string, fi os.FileInfo) error {
 	h := &siva.Header{
 		Name:    cleanPath(fullpath),
 		Mode:    fi.Mode(),
@@ -93,6 +109,10 @@ func (c *CmdPack) packFile(fullpath string, fi os.FileInfo) error {
 		return err
 	}
 
+	return nil
+}
+
+func (c *CmdPack) writeFile(fullpath string, fi os.FileInfo) error {
 	f, err := os.Open(fullpath)
 	if err != nil {
 		return err

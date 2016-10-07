@@ -26,13 +26,15 @@ func main() {
 }
 
 type cmd struct {
-	Args struct {
+	Verbose bool `short:"v" description:"Activates the verbose mode"`
+	Args    struct {
 		File string `positional-arg-name:"siva-file" required:"true" description:"siva file."`
 	} `positional-args:"yes"`
 
-	f *os.File
-	r *siva.Reader
-	w *siva.Writer
+	f  *os.File
+	fi os.FileInfo
+	r  *siva.Reader
+	w  *siva.Writer
 }
 
 func (c *cmd) validate() error {
@@ -65,8 +67,21 @@ func (c *cmd) buildWriter(append bool) (err error) {
 		return fmt.Errorf("error creating file: %s", err)
 	}
 
+	c.fi, err = c.f.Stat()
+	if err != nil {
+		return err
+	}
+
 	c.w = siva.NewWriter(c.f)
 	return nil
+}
+
+func (c *cmd) println(a ...interface{}) {
+	if !c.Verbose {
+		return
+	}
+
+	fmt.Println(a...)
 }
 
 func (c *cmd) close() error {
