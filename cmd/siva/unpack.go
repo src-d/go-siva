@@ -95,6 +95,10 @@ func (c *CmdUnpack) do() error {
 	}
 
 	for _, entry := range i {
+		if !c.matchingFunc(entry.Name) {
+			continue
+		}
+
 		if err := c.extract(entry); err != nil {
 			return err
 		}
@@ -111,7 +115,7 @@ func (c *CmdUnpack) extract(entry *siva.IndexEntry) error {
 
 	dst, err := c.createFile(entry)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	defer dst.Close()

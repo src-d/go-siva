@@ -2,9 +2,13 @@ package main
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/dustin/go-humanize"
 )
+
+var defaultOutput io.Writer = os.Stdout
 
 type CmdList struct {
 	cmd
@@ -30,7 +34,7 @@ func (c *CmdList) listVolume() error {
 	}
 
 	for _, file := range i {
-		fmt.Printf("%s %s % 6s %s\n",
+		fmt.Fprintf(defaultOutput, "%s %s % 6s %s\n",
 			file.Mode.Perm(),
 			file.ModTime.Format("Jan 02 15:04"),
 			humanize.Bytes(file.Size),
