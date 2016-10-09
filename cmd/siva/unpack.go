@@ -94,7 +94,7 @@ func (c *CmdUnpack) do() error {
 		return err
 	}
 
-	for _, entry := range i {
+	for _, entry := range i.Filter() {
 		if !c.matchingFunc(entry.Name) {
 			continue
 		}

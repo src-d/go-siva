@@ -11,6 +11,8 @@ import (
 type Flag uint32
 
 const (
+	_ Flag = iota // we discard the 0
+
 	//FlagDeleted should be used to identify when a file is deleted
 	FlagDeleted Flag = iota
 )

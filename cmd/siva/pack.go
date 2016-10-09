@@ -13,6 +13,7 @@ import (
 type CmdPack struct {
 	cmd
 	Append bool `long:"append" description:"If append, the files are added to an existing siva file"`
+	Delete bool `long:"delete" description:"If delete, the files are deleted to an existing siva file"`
 	Input  struct {
 		Files []string `positional-arg-name:"input" description:"files or directories to be add to the archive."`
 	} `positional-args:"yes"`
@@ -103,6 +104,10 @@ func (c *CmdPack) writeFileHeader(fullpath string, fi os.FileInfo) error {
 		Name:    cleanPath(fullpath),
 		Mode:    fi.Mode(),
 		ModTime: fi.ModTime(),
+	}
+
+	if c.Delete {
+		h.Flags = siva.FlagDeleted
 	}
 
 	if err := c.w.WriteHeader(h); err != nil {

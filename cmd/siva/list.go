@@ -33,7 +33,7 @@ func (c *CmdList) listVolume() error {
 		return fmt.Errorf("error reading index: %s", err)
 	}
 
-	for _, file := range i {
+	for _, file := range i.Filter() {
 		fmt.Fprintf(defaultOutput, "%s %s % 6s %s\n",
 			file.Mode.Perm(),
 			file.ModTime.Format("Jan 02 15:04"),

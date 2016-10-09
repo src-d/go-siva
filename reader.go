@@ -1,4 +1,4 @@
-package siva 
+package siva
 
 import (
 	"errors"

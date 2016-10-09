@@ -1,4 +1,4 @@
-package siva 
+package siva
 
 import (
 	"bytes"
@@ -64,27 +64,25 @@ func (s *IndexSuite) TestIndexEntryIdempotent(c *C) {
 	c.Assert(entry, DeepEquals, expected)
 }
 
-func (s *IndexSuite) TestIndexIdempotent(c *C) {
-	e := &IndexEntry{}
-	e.Name = "foo"
-	e.Mode = 0644
-	e.ModTime = time.Now()
-	e.Start = 10
-	e.Size = 3
-	e.CRC32 = 42
-	e.absStart = 10
+func (s *IndexSuite) TestFilter(c *C) {
+	i := Index{
+		{Header: Header{Name: "foo"}, Start: 1},
+		{Header: Header{Name: "foo"}, Start: 2},
+	}
 
-	expected := make(Index, 0)
-	expected = append(expected, e)
+	sort.Sort(i)
+	f := i.Filter()
+	c.Assert(f, HasLen, 1)
+	c.Assert(f[0].Start, Equals, uint64(2))
+}
 
-	buf := bytes.NewBuffer([]byte("foo"))
-	err := expected.WriteTo(buf)
-	c.Assert(err, IsNil)
+func (s *IndexSuite) TestFilterDeleted(c *C) {
+	i := Index{
+		{Header: Header{Name: "foo"}, Start: 1},
+		{Header: Header{Name: "foo", Flags: FlagDeleted}, Start: 2},
+	}
 
-	index := make(Index, 0)
-	r := bytes.NewReader(buf.Bytes())
-	err = index.ReadFrom(r, uint64(buf.Len()))
-	c.Assert(err, IsNil)
-	c.Assert(index, DeepEquals, expected)
-	c.Assert(index, HasLen, 1)
+	sort.Sort(i)
+	f := i.Filter()
+	c.Assert(f, HasLen, 0)
 }

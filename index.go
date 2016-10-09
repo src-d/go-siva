@@ -1,4 +1,4 @@
-package siva 
+package siva
 
 import (
 	"bytes"
@@ -24,8 +24,13 @@ const (
 	indexFooterSize       = 24
 )
 
+// Index contains all the files on a siva file, including duplicate files or
+// even does flagged as deleted
 type Index []*IndexEntry
 
+// ReadFrom reads an Index from a given reader, the position where the current
+// block ends is required since we are reading the index from the end of the
+// file
 func (i *Index) ReadFrom(r io.ReadSeeker, endBlock uint64) error {
 	if _, err := r.Seek(int64(endBlock)-indexFooterSize, io.SeekStart); err != nil {
 		return err
@@ -109,6 +114,7 @@ func (i *Index) readEntries(r io.Reader, f *IndexFooter, endBlock uint64) error 
 	return nil
 }
 
+// WriteTo writes the Index to a io.Writer
 func (i *Index) WriteTo(w io.Writer) error {
 	if len(*i) == 0 {
 		return ErrEmptyIndex
@@ -151,6 +157,31 @@ func (s Index) Len() int           { return len(s) }
 func (s Index) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s Index) Less(i, j int) bool { return s[i].absStart < s[j].absStart }
 
+// Filter returns a filtered version of the current Index removing duplicates
+// keeping the latests versions and filtering all the deleted files
+func (i *Index) Filter() Index {
+	var f Index
+
+	seen := make(map[string]bool, 0)
+	for j := len(*i) - 1; j >= 0; j-- {
+		e := (*i)[j]
+
+		if _, ok := seen[e.Name]; ok {
+			continue
+		}
+
+		seen[e.Name] = true
+		if e.Flags&FlagDeleted != 0 {
+			continue
+		}
+
+		f = append(f, e)
+	}
+
+	sort.Sort(f)
+	return f
+}
+
 type IndexEntry struct {
 	Header
 	Start uint64
@@ -163,8 +194,9 @@ type IndexEntry struct {
 	absStart uint64
 }
 
+// WriteTo writes the IndexEntry to an io.Writer
 func (e *IndexEntry) WriteTo(w io.Writer) error {
-	if e.Name == "" || e.Size == 0 {
+	if e.Name == "" {
 		return ErrInvalidIndexEntry
 	}
 
@@ -188,6 +220,7 @@ func (e *IndexEntry) WriteTo(w io.Writer) error {
 	})
 }
 
+// ReadFrom reads a IndexEntry entry from an io.Reader
 func (e *IndexEntry) ReadFrom(r io.Reader) error {
 	var length uint32
 	if err := binary.Read(r, binary.BigEndian, &length); err != nil {
@@ -221,6 +254,7 @@ type IndexFooter struct {
 	CRC32      uint32
 }
 
+// ReadFrom reads a IndexFooter entry from an io.Reader
 func (f *IndexFooter) ReadFrom(r io.Reader) error {
 	return readBinary(r, []interface{}{
 		&f.EntryCount,
@@ -230,6 +264,7 @@ func (f *IndexFooter) ReadFrom(r io.Reader) error {
 	})
 }
 
+// WriteTo writes the IndexFooter to an io.Writer
 func (f *IndexFooter) WriteTo(w io.Writer) error {
 	return writeBinary(w, []interface{}{
 		f.EntryCount,
