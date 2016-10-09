@@ -17,6 +17,7 @@ const (
 	FlagDeleted Flag = iota
 )
 
+// Header contains the meta information from a file
 type Header struct {
 	Name    string
 	ModTime time.Time

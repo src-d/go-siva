@@ -7,16 +7,17 @@ package siva
 // - n number of index entries, the index entry looks like:
 //      4-byte length of the filename
 //      n-byte filename
-//      8-byte permission and mode bits
+//      4-byte permission and mode bits
 //      8-byte mod time in nanoseconds
-//      4-byte size of the file
-//      4-byte offset to the start of the file content
+//      8-byte offset to the start of the file content in the current block
+//      8-byte size of the file
 //      4-byte CRC32 of file content
+//      4-byte flags
 // - x-byte index footer
-//      4-byte index start offset
 //      4-byte entries count
+//      8-byte index size
+//      8-byte block size
 //      4-byte CRC32 of index header + index entries
-//      4-byte offset to the previous index in the file
 //
 //     +------------------+
 //     | raw file content | ----------+
