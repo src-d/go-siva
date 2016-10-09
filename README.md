@@ -1,8 +1,8 @@
 # śiva format शिव [![GoDoc](https://godoc.org/github.com/src-d/go-siva?status.svg)](https://godoc.org/github.com/src-d/go-siva) [![Build Status](https://travis-ci.org/src-d/go-siva.svg?branch=master)] (https://travis-ci.org/src-d/go-siva) [![codebeat badge](https://codebeat.co/badges/a821494a-ff72-4756-9a70-652436e93485)](https://codebeat.co/projects/github-com-src-d-go-siva)
 
-śiva_stand for <b>s</b>eekable <b>i</b>ndexed <b>b</b>lock <b>a</b>rchiver
+_śiva_stand for <b>s</b>eekable <b>i</b>ndexed <b>b</b>lock <b>a</b>rchiver
 
-siva is archive format very similar to tar or zip, focused on allowing: constant-time random file access, seekable access to the contained files and concatenable archive files 
+_śiva_ is archive format very similar to tar or zip, focused on allowing: constant-time random file access, seekable access to the contained files and concatenable archive files 
 
 ![siva](https://cloud.githubusercontent.com/assets/1573114/19213424/8a97b7ee-8d6c-11e6-9c84-ddb58862dd94.png)
 

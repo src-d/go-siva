@@ -115,13 +115,3 @@ func (s *WriterSuite) writeFixture(c *C, w *Writer, file fileFixture) {
 	c.Assert(err, IsNil)
 	c.Assert(n, Equals, len(file.Body))
 }
-
-type fileFixture struct {
-	Name, Body string
-}
-
-var files = []fileFixture{
-	{"readme.txt", "This archive contains some text files."},
-	{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
-	{"todo.txt", "Get animal handling license."},
-}

@@ -90,3 +90,13 @@ func (s *CommonSuite) TestHashedReaderReset(c *C) {
 	c.Assert(r.Checkshum(), Equals, uint32(0x8c736521))
 	c.Assert(r.Position(), Equals, 3)
 }
+
+type fileFixture struct {
+	Name, Body string
+}
+
+var files = []fileFixture{
+	{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
+	{"readme.txt", "This archive contains some text files."},
+	{"todo.txt", "Get animal handling license."},
+}

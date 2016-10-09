@@ -1,6 +1,6 @@
 package siva
 
-// iba files are n number of blocks with the following format:
+// siva files are n number of blocks with the following format:
 //
 // - n number of raw content, without any restriction and without any divider
 // - 3-byte index header, {'I', 'B,' A'}, the begining of the index section
