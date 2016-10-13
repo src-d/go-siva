@@ -182,6 +182,17 @@ func (i *Index) Filter() Index {
 	return f
 }
 
+// Find returns the first IndexEntry with the given name, if any
+func (i Index) Find(name string) *IndexEntry {
+	for _, e := range i {
+		if e.Name == name {
+			return e
+		}
+	}
+
+	return nil
+}
+
 type IndexEntry struct {
 	Header
 	Start uint64

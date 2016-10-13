@@ -86,3 +86,15 @@ func (s *IndexSuite) TestFilterDeleted(c *C) {
 	f := i.Filter()
 	c.Assert(f, HasLen, 0)
 }
+
+func (s *IndexSuite) TestFind(c *C) {
+	i := Index{
+		{Header: Header{Name: "foo"}, Start: 1},
+		{Header: Header{Name: "bar"}, Start: 2},
+	}
+
+	sort.Sort(i)
+	e := i.Find("bar")
+	c.Assert(e, NotNil)
+	c.Assert(e.Start, Equals, uint64(2))
+}
