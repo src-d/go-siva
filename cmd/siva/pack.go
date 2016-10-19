@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"syscall"
 
-	"github.com/src-d/siva"
+	"github.com/src-d/go-siva"
 )
 
 type CmdPack struct {
