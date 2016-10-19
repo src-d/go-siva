@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/src-d/go-siva"
+	"gopkg.in/src-d/go-siva.v1"
 
 	. "gopkg.in/check.v1"
 )

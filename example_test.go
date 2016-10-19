@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/src-d/go-siva"
+	"gopkg.in/src-d/go-siva.v1"
 )
 
 func Example() {

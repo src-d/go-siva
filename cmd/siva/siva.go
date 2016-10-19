@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"gopkg.in/src-d/go-siva.v1"
+
 	"github.com/jessevdk/go-flags"
-	"github.com/src-d/go-siva"
 )
 
 func main() {

@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"regexp"
 
-	humanize "github.com/dustin/go-humanize"
-	"github.com/src-d/go-siva"
+	"gopkg.in/src-d/go-siva.v1"
+
+	"github.com/dustin/go-humanize"
 )
 
 const writeFlagsDefault = os.O_WRONLY | os.O_CREATE | os.O_TRUNC | os.O_EXCL

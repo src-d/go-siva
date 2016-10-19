@@ -1,4 +1,4 @@
-package siva
+package siva // import "gopkg.in/src-d/go-siva.v1"
 
 // siva files are n number of blocks with the following format:
 //
