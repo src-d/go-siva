@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/jessevdk/go-flags"
-	"github.com/src-d/siva"
+	"github.com/src-d/go-siva"
 )
 
 func main() {

@@ -8,7 +8,7 @@ import (
 	"regexp"
 
 	humanize "github.com/dustin/go-humanize"
-	"github.com/src-d/siva"
+	"github.com/src-d/go-siva"
 )
 
 const writeFlagsDefault = os.O_WRONLY | os.O_CREATE | os.O_TRUNC | os.O_EXCL
