@@ -19,13 +19,13 @@ func (s *CommonSuite) TestHashedWriter(c *C) {
 	n, err := w.Write([]byte("foo"))
 	c.Assert(err, IsNil)
 	c.Assert(n, Equals, 3)
-	c.Assert(w.Checkshum(), Equals, uint32(0x8c736521))
+	c.Assert(w.Checksum(), Equals, uint32(0x8c736521))
 	c.Assert(w.Position(), Equals, 3)
 
 	n, err = w.Write([]byte("foo"))
 	c.Assert(err, IsNil)
 	c.Assert(n, Equals, 3)
-	c.Assert(w.Checkshum(), Equals, uint32(0x647af61e))
+	c.Assert(w.Checksum(), Equals, uint32(0x647af61e))
 	c.Assert(w.Position(), Equals, 6)
 }
 
@@ -35,7 +35,7 @@ func (s *CommonSuite) TestHashedWriterReset(c *C) {
 	n, err := w.Write([]byte("foo"))
 	c.Assert(err, IsNil)
 	c.Assert(n, Equals, 3)
-	c.Assert(w.Checkshum(), Equals, uint32(0x8c736521))
+	c.Assert(w.Checksum(), Equals, uint32(0x8c736521))
 	c.Assert(w.Position(), Equals, 3)
 
 	w.Reset()
@@ -43,7 +43,7 @@ func (s *CommonSuite) TestHashedWriterReset(c *C) {
 	n, err = w.Write([]byte("foo"))
 	c.Assert(err, IsNil)
 	c.Assert(n, Equals, 3)
-	c.Assert(w.Checkshum(), Equals, uint32(0x8c736521))
+	c.Assert(w.Checksum(), Equals, uint32(0x8c736521))
 	c.Assert(w.Position(), Equals, 3)
 }
 
