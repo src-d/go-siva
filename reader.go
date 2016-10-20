@@ -9,15 +9,16 @@ import (
 var (
 	ErrPendingContent   = errors.New("entry wasn't fully read")
 	ErrInvalidCheckshum = errors.New("invalid checksum")
-	ErrInvalidReaderAt  = errors.New("reader provided doen't implements ReaderAt interface")
+	ErrInvalidReaderAt  = errors.New("reader provided dosen't implement ReaderAt interface")
 )
 
 // A Reader provides random access to the contents of a siva archive.
 type Reader struct {
 	r io.ReadSeeker
 
-	current *IndexEntry
-	pending uint64
+	getIndexFunc func() (Index, error)
+	current      *IndexEntry
+	pending      uint64
 }
 
 // NewReader creates a new Reader reading from r, reader requires be seekable
@@ -26,14 +27,28 @@ func NewReader(r io.ReadSeeker) *Reader {
 	return &Reader{r: r}
 }
 
+func newReaderWithIndex(r io.ReadSeeker, getIndexFunc func() (Index, error)) *Reader {
+	return &Reader{
+		r:            r,
+		getIndexFunc: getIndexFunc,
+	}
+}
+
 // Index reads the index of the siva file from the provided reader
 func (r *Reader) Index() (Index, error) {
+	if r.getIndexFunc != nil {
+		return r.getIndexFunc()
+	}
+	return r.readIndex()
+}
+
+func (r *Reader) readIndex() (Index, error) {
 	endLastBlock, err := r.r.Seek(0, io.SeekEnd)
 	if err != nil {
 		return nil, err
 	}
 
-	i, err := r.readIndex(uint64(endLastBlock))
+	i, err := r.readIndexAt(uint64(endLastBlock))
 	if err != nil {
 		return i, err
 	}
@@ -42,7 +57,7 @@ func (r *Reader) Index() (Index, error) {
 	return i, nil
 }
 
-func (r *Reader) readIndex(offset uint64) (Index, error) {
+func (r *Reader) readIndexAt(offset uint64) (Index, error) {
 	i := make(Index, 0)
 	if err := i.ReadFrom(r.r, offset); err != nil {
 		return nil, err
@@ -52,7 +67,7 @@ func (r *Reader) readIndex(offset uint64) (Index, error) {
 		return i, nil
 	}
 
-	previ, err := r.readIndex(i[0].absStart)
+	previ, err := r.readIndexAt(i[0].absStart)
 	if err != nil {
 		return nil, err
 	}
