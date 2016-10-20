@@ -144,7 +144,7 @@ func (i *Index) WriteTo(w io.Writer) error {
 
 	f.IndexSize = uint64(hw.Position())
 	f.BlockSize = blockSize + f.IndexSize + indexFooterSize
-	f.CRC32 = hw.Checkshum()
+	f.CRC32 = hw.Checksum()
 
 	if err := f.WriteTo(hw); err != nil {
 		return err
@@ -199,8 +199,8 @@ type IndexEntry struct {
 	Size  uint64
 	CRC32 uint32
 
-	// absStart stores the  abosulute starting position of the entry in the file
-	// accross all the blocks in the file, is calculate on-the-fly, so thats
+	// absStart stores the  absolute starting position of the entry in the file
+	// across all the blocks in the file, is calculate on-the-fly, so that's
 	// why is not stored
 	absStart uint64
 }

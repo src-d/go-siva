@@ -65,7 +65,7 @@ func (w *Writer) Flush() error {
 	}
 
 	w.current.Size = w.position - w.current.Start
-	w.current.CRC32 = w.w.Checkshum()
+	w.current.CRC32 = w.w.Checksum()
 	w.w.Reset()
 
 	return nil

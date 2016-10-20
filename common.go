@@ -56,7 +56,7 @@ func (w *hashedWriter) Position() int {
 	return w.c
 }
 
-func (w *hashedWriter) Checkshum() uint32 {
+func (w *hashedWriter) Checksum() uint32 {
 	return w.h.Sum32()
 }
 

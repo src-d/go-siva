@@ -48,7 +48,7 @@ func Example() {
 	file := bytes.NewReader(buf.Bytes())
 	r := siva.NewReader(file)
 
-	// Get all the files in the siva file.
+	// Get all files in the siva file.
 	i, err := r.Index()
 	if err != nil {
 		log.Fatalln(err)
