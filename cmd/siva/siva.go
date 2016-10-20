@@ -34,8 +34,8 @@ type cmd struct {
 
 	f  *os.File
 	fi os.FileInfo
-	r  *siva.Reader
-	w  *siva.Writer
+	r  siva.Reader
+	w  siva.Writer
 }
 
 func (c *cmd) validate() error {

@@ -5,8 +5,8 @@ import "io"
 //ReadWriter can read and write to the same siva file.
 //It is not thread-safe.
 type ReadWriter struct {
-	*Reader
-	*Writer
+	*reader
+	*writer
 }
 
 func NewReaderWriter(rw io.ReadWriteSeeker) (*ReadWriter, error) {
@@ -14,9 +14,20 @@ func NewReaderWriter(rw io.ReadWriteSeeker) (*ReadWriter, error) {
 	if !ok {
 		return nil, ErrInvalidReaderAt
 	}
-	w := NewWriter(rw)
+
+	i, err := readIndex(rw)
+	if err == ErrEmptyIndex {
+		i = Index{}
+	} else if err != nil {
+		return nil, err
+	}
+
+	w := newWriter(rw)
 	getIndexFunc := func() (Index, error) {
-		return w.index, nil
+		index := Index{}
+		index = append(index, i...)
+		index = append(index, w.index...)
+		return index, nil
 	}
 	r := newReaderWithIndex(rw, getIndexFunc)
 	return &ReadWriter{r, w}, nil

@@ -11,7 +11,14 @@ var (
 )
 
 // A Writer provides sequential writing of a siva archive
-type Writer struct {
+type Writer interface {
+	io.Writer
+	io.Closer
+	WriteHeader(h *Header) error
+	Flush() error
+}
+
+type writer struct {
 	w        *hashedWriter
 	index    Index
 	current  *IndexEntry
@@ -20,14 +27,18 @@ type Writer struct {
 }
 
 // NewWriter creates a new Writer writing to w.
-func NewWriter(w io.Writer) *Writer {
-	return &Writer{
+func NewWriter(w io.Writer) Writer {
+	return newWriter(w)
+}
+
+func newWriter(w io.Writer) *writer {
+	return &writer{
 		w: newHashedWriter(w),
 	}
 }
 
 // WriteHeader writes hdr and prepares to accept the file's contents.
-func (w *Writer) WriteHeader(h *Header) error {
+func (w *writer) WriteHeader(h *Header) error {
 	if err := w.flushIfPending(); err != nil {
 		return err
 	}
@@ -43,7 +54,7 @@ func (w *Writer) WriteHeader(h *Header) error {
 
 // Write writes to the current entry in the siva archive, WriteHeader should
 // called before, if not returns ErrMissingHeader
-func (w *Writer) Write(b []byte) (int, error) {
+func (w *writer) Write(b []byte) (int, error) {
 	if w.current == nil {
 		return 0, ErrMissingHeader
 	}
@@ -55,7 +66,7 @@ func (w *Writer) Write(b []byte) (int, error) {
 }
 
 // Flush finishes writing the current file (optional)
-func (w *Writer) Flush() error {
+func (w *writer) Flush() error {
 	if w.closed {
 		return ErrClosedWriter
 	}
@@ -71,7 +82,7 @@ func (w *Writer) Flush() error {
 	return nil
 }
 
-func (w *Writer) flushIfPending() error {
+func (w *writer) flushIfPending() error {
 	if w.closed {
 		return ErrClosedWriter
 	}
@@ -84,7 +95,7 @@ func (w *Writer) flushIfPending() error {
 }
 
 // Close closes the siva archive, writing the Index footer to the current writer.
-func (w *Writer) Close() error {
+func (w *writer) Close() error {
 	defer func() { w.closed = true }()
 
 	if err := w.flushIfPending(); err != nil {

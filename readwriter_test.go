@@ -65,6 +65,22 @@ func (s *ReadWriterSuite) TestWriteRead(c *C) {
 	c.Assert(rw.Close(), IsNil)
 }
 
+func (s *ReadWriterSuite) TestReadExisting(c *C) {
+	f, err := os.OpenFile("fixtures/basic.siva", os.O_RDONLY, os.ModePerm)
+	c.Assert(err, IsNil)
+	c.Assert(f, NotNil)
+
+	rw, err := siva.NewReaderWriter(f)
+	c.Assert(err, IsNil)
+	c.Assert(rw, NotNil)
+
+	index, err := rw.Index()
+	c.Assert(err, IsNil)
+	c.Assert(len(index), Equals, 3)
+
+	c.Assert(rw.Close(), IsNil)
+}
+
 func (s *ReadWriterSuite) TestFailIfNotReadAt(c *C) {
 	rw, err := siva.NewReaderWriter(&dummyReadWriterSeeker{})
 	c.Assert(err, Equals, siva.ErrInvalidReaderAt)

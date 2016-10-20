@@ -3,7 +3,6 @@ package siva
 import (
 	"errors"
 	"io"
-	"sort"
 )
 
 var (
@@ -13,7 +12,14 @@ var (
 )
 
 // A Reader provides random access to the contents of a siva archive.
-type Reader struct {
+type Reader interface {
+	io.Reader
+	Seek(e *IndexEntry) (int64, error)
+	Index() (Index, error)
+	Get(e *IndexEntry) (*io.SectionReader, error)
+}
+
+type reader struct {
 	r io.ReadSeeker
 
 	getIndexFunc func() (Index, error)
@@ -23,62 +29,29 @@ type Reader struct {
 
 // NewReader creates a new Reader reading from r, reader requires be seekable
 // and optionally should implement io.ReaderAt to make usage of the Get method
-func NewReader(r io.ReadSeeker) *Reader {
-	return &Reader{r: r}
+func NewReader(r io.ReadSeeker) Reader {
+	return &reader{r: r}
 }
 
-func newReaderWithIndex(r io.ReadSeeker, getIndexFunc func() (Index, error)) *Reader {
-	return &Reader{
+func newReaderWithIndex(r io.ReadSeeker, getIndexFunc func() (Index, error)) *reader {
+	return &reader{
 		r:            r,
 		getIndexFunc: getIndexFunc,
 	}
 }
 
 // Index reads the index of the siva file from the provided reader
-func (r *Reader) Index() (Index, error) {
+func (r *reader) Index() (Index, error) {
 	if r.getIndexFunc != nil {
 		return r.getIndexFunc()
 	}
-	return r.readIndex()
-}
 
-func (r *Reader) readIndex() (Index, error) {
-	endLastBlock, err := r.r.Seek(0, io.SeekEnd)
-	if err != nil {
-		return nil, err
-	}
-
-	i, err := r.readIndexAt(uint64(endLastBlock))
-	if err != nil {
-		return i, err
-	}
-
-	sort.Sort(i)
-	return i, nil
-}
-
-func (r *Reader) readIndexAt(offset uint64) (Index, error) {
-	i := make(Index, 0)
-	if err := i.ReadFrom(r.r, offset); err != nil {
-		return nil, err
-	}
-
-	if len(i) == 0 || i[0].absStart == 0 {
-		return i, nil
-	}
-
-	previ, err := r.readIndexAt(i[0].absStart)
-	if err != nil {
-		return nil, err
-	}
-
-	i = append(i, previ...)
-	return i, nil
+	return readIndex(r.r)
 }
 
 // Get returns a new io.SectionReader allowing concurrent read access to the
 // content of the read
-func (r *Reader) Get(e *IndexEntry) (*io.SectionReader, error) {
+func (r *reader) Get(e *IndexEntry) (*io.SectionReader, error) {
 	ra, ok := r.r.(io.ReaderAt)
 	if !ok {
 		return nil, ErrInvalidReaderAt
@@ -89,7 +62,7 @@ func (r *Reader) Get(e *IndexEntry) (*io.SectionReader, error) {
 
 // Seek seek the internal reader to the starting position of the content for the
 // given IndexEntry
-func (r *Reader) Seek(e *IndexEntry) (int64, error) {
+func (r *reader) Seek(e *IndexEntry) (int64, error) {
 	r.current = e
 	r.pending = e.Size
 
@@ -98,7 +71,7 @@ func (r *Reader) Seek(e *IndexEntry) (int64, error) {
 
 // Read reads up to len(p) bytes, starting at the current position set by Seek
 // and ending in the end of the content, retuning a io.EOF when its reached
-func (r *Reader) Read(p []byte) (n int, err error) {
+func (r *reader) Read(p []byte) (n int, err error) {
 	if r.pending == 0 {
 		return 0, io.EOF
 	}

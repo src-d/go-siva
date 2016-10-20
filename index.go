@@ -306,3 +306,41 @@ func readBinary(r io.Reader, data []interface{}) error {
 
 	return nil
 }
+
+func readIndex(r io.ReadSeeker) (Index, error) {
+	endLastBlock, err := r.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, err
+	}
+
+	if endLastBlock == 0 {
+		return nil, ErrEmptyIndex
+	}
+
+	i, err := readIndexAt(r, uint64(endLastBlock))
+	if err != nil {
+		return i, err
+	}
+
+	sort.Sort(i)
+	return i, nil
+}
+
+func readIndexAt(r io.ReadSeeker, offset uint64) (Index, error) {
+	i := make(Index, 0)
+	if err := i.ReadFrom(r, offset); err != nil {
+		return nil, err
+	}
+
+	if len(i) == 0 || i[0].absStart == 0 {
+		return i, nil
+	}
+
+	previ, err := readIndexAt(r, i[0].absStart)
+	if err != nil {
+		return nil, err
+	}
+
+	i = append(i, previ...)
+	return i, nil
+}
