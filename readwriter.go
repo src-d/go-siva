@@ -16,18 +16,13 @@ func NewReaderWriter(rw io.ReadWriteSeeker) (*ReadWriter, error) {
 	}
 
 	i, err := readIndex(rw)
-	if err == ErrEmptyIndex {
-		i = Index{}
-	} else if err != nil {
+	if err != nil && err != ErrEmptyIndex {
 		return nil, err
 	}
 
 	w := newWriter(rw)
 	getIndexFunc := func() (Index, error) {
-		index := Index{}
-		index = append(index, i...)
-		index = append(index, w.index...)
-		return index, nil
+		return append(i, w.index...), nil
 	}
 	r := newReaderWithIndex(rw, getIndexFunc)
 	return &ReadWriter{r, w}, nil
