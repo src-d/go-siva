@@ -86,7 +86,7 @@ func (s *WriterSuite) TestWriterReaderIdempotentMultiWrite(c *C) {
 	s.assertIndex(c, r, index)
 }
 
-func (s *WriterSuite) assertIndex(c *C, r *Reader, index Index) {
+func (s *WriterSuite) assertIndex(c *C, r Reader, index Index) {
 	c.Assert(index, HasLen, 3)
 
 	for i, e := range index {
@@ -101,7 +101,7 @@ func (s *WriterSuite) assertIndex(c *C, r *Reader, index Index) {
 	}
 }
 
-func (s *WriterSuite) writeFixture(c *C, w *Writer, file fileFixture) {
+func (s *WriterSuite) writeFixture(c *C, w Writer, file fileFixture) {
 	hdr := &Header{
 		Name:    file.Name,
 		Mode:    0600,
