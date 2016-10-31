@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -67,11 +68,36 @@ func (c *CmdPack) pack() error {
 			return fmt.Errorf("Invalid input file/dir %q, no such file", file)
 		}
 
-		if !fi.Mode().IsRegular() {
-			continue
+		if err := c.packPath(file, fi); err != nil {
+			return err
 		}
+	}
 
-		if err := c.packFile(file, fi); err != nil {
+	return nil
+}
+
+func (c *CmdPack) packPath(fullpath string, fi os.FileInfo) error {
+	if fi.Mode().IsDir() {
+		return c.packDir(fullpath)
+	}
+
+	if !fi.Mode().IsRegular() {
+		return nil
+	}
+
+	return c.packFile(fullpath, fi)
+}
+
+func (c *CmdPack) packDir(fullpath string) error {
+	fis, err := ioutil.ReadDir(fullpath)
+	if err != nil {
+		return err
+	}
+
+	for _, fi := range fis {
+		p := filepath.Join(fullpath, fi.Name())
+		err := c.packPath(p, fi)
+		if err != nil {
 			return err
 		}
 	}
@@ -132,7 +158,7 @@ func (c *CmdPack) writeFile(fullpath string, fi os.FileInfo) error {
 		return fmt.Errorf("unexpected bytes written")
 	}
 
-	return nil
+	return c.w.Flush()
 }
 
 func cleanPath(path string) string {

@@ -72,6 +72,27 @@ func (s *PackSuite) TestBasic(c *C) {
 	c.Assert(i, HasLen, 3)
 }
 
+func (s *PackSuite) TestDir(c *C) {
+	cmd := &CmdPack{}
+	cmd.Args.File = filepath.Join(s.folder, "foo.siva")
+	cmd.Input.Files = []string{filepath.Join(s.folder, "files")}
+
+	err := cmd.Execute(nil)
+	c.Assert(err, IsNil)
+
+	f, err := os.Open(cmd.Args.File)
+	c.Assert(err, IsNil)
+
+	fi, err := f.Stat()
+	c.Assert(err, IsNil)
+	c.Assert(int(fi.Size()), Equals, 376)
+
+	r := siva.NewReader(f)
+	i, err := r.Index()
+	c.Assert(err, IsNil)
+	c.Assert(i, HasLen, 3)
+}
+
 func (s *PackSuite) TestAppend(c *C) {
 	cmd := &CmdPack{}
 	cmd.Args.File = filepath.Join(s.folder, "foo.siva")
