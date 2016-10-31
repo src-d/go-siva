@@ -7,6 +7,7 @@ import (
 	"io"
 	"sort"
 	"time"
+	"path/filepath"
 )
 
 var (
@@ -25,7 +26,7 @@ const (
 )
 
 // Index contains all the files on a siva file, including duplicate files or
-// even does flagged as deleted
+// even does flagged as deleted.
 type Index []*IndexEntry
 
 // ReadFrom reads an Index from a given reader, the position where the current
@@ -158,7 +159,7 @@ func (s Index) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
 func (s Index) Less(i, j int) bool { return s[i].absStart < s[j].absStart }
 
 // Filter returns a filtered version of the current Index removing duplicates
-// keeping the latests versions and filtering all the deleted files
+// keeping the latest versions and filtering all the deleted files
 func (i *Index) Filter() Index {
 	var f Index
 
@@ -191,6 +192,24 @@ func (i Index) Find(name string) *IndexEntry {
 	}
 
 	return nil
+}
+
+// Glob returns all index entries whose name matches pattern or nil if there is
+// no matching entry. The syntax of patterns is the same as in filepath.Match.
+func (i Index) Glob(pattern string) ([]*IndexEntry, error) {
+	matches := []*IndexEntry{}
+	for _, e := range i {
+		m, err := filepath.Match(pattern, e.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		if m {
+			matches = append(matches, e)
+		}
+	}
+
+	return matches, nil
 }
 
 type IndexEntry struct {
