@@ -19,6 +19,11 @@ func (s *ReaderSuite) TestIndexSeveralBlocks(c *C) {
 	s.testIndex(c, "fixtures/blocks.siva")
 }
 
+func (s *ReaderSuite) TestIndexOverwrittenFiles(c *C) {
+	s.testIndex(c, "fixtures/overwritten.siva")
+}
+
+
 func (s *ReaderSuite) testIndex(c *C, fixture string) {
 	f, err := os.Open("fixtures/blocks.siva")
 	c.Assert(err, IsNil)

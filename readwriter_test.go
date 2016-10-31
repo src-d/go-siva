@@ -7,8 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	. "gopkg.in/check.v1"
 	"gopkg.in/src-d/go-siva.v1"
+
+	. "gopkg.in/check.v1"
 )
 
 type ReadWriterSuite struct {
@@ -78,6 +79,58 @@ func (s *ReadWriterSuite) TestReadExisting(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(len(index), Equals, 3)
 
+	c.Assert(rw.Close(), IsNil)
+}
+
+func (s *ReadWriterSuite) TestOverwriteExisting(c *C) {
+	tmpFile, err := os.Create(filepath.Join(s.tmpDir, c.TestName()))
+	c.Assert(err, IsNil)
+	c.Assert(tmpFile, NotNil)
+
+	rw, err := siva.NewReaderWriter(tmpFile)
+	c.Assert(err, IsNil)
+	c.Assert(rw, NotNil)
+
+	err = rw.WriteHeader(&siva.Header{
+		Name: "foo",
+	})
+	c.Assert(err, IsNil)
+	_, err = rw.Write([]byte("foo"))
+	c.Assert(err, IsNil)
+	c.Assert(rw.Flush(), IsNil)
+
+	index, err := rw.Index()
+	c.Assert(err, IsNil)
+	index = index.Filter()
+
+	e := index.Find("foo")
+	c.Assert(e, NotNil)
+
+	sr, err := rw.Get(e)
+	c.Assert(err, IsNil)
+	written, err := ioutil.ReadAll(sr)
+	c.Assert(err, IsNil)
+	c.Assert(string(written), DeepEquals, "foo")
+
+	err = rw.WriteHeader(&siva.Header{
+		Name: "foo",
+	})
+	c.Assert(err, IsNil)
+	_, err = rw.Write([]byte("bar"))
+	c.Assert(err, IsNil)
+	c.Assert(rw.Flush(), IsNil)
+
+	index, err = rw.Index()
+	c.Assert(err, IsNil)
+
+	e = index.Filter().Find("foo")
+	c.Assert(e, NotNil)
+
+	sr, err = rw.Get(e)
+	c.Assert(err, IsNil)
+	written, err = ioutil.ReadAll(sr)
+	c.Assert(err, IsNil)
+	c.Assert(string(written), DeepEquals, "bar")
 	c.Assert(rw.Close(), IsNil)
 }
 
