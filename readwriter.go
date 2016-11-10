@@ -20,15 +20,15 @@ func NewReaderWriter(rw io.ReadWriteSeeker) (*ReadWriter, error) {
 		return nil, err
 	}
 
+	end, err := rw.Seek(0, io.SeekEnd)
+	if err != nil {
+		return nil, err
+	}
+
 	w := newWriter(rw)
 	getIndexFunc := func() (Index, error) {
-		start := uint64(0)
-		if len(i) > 0 {
-			lastEntry := i[len(i) - 1]
-			start = lastEntry.absStart + lastEntry.Size
-		}
 		for _, e := range w.index {
-			e.absStart = start + e.Start
+			e.absStart = uint64(end) + e.Start
 		}
 		return append(i, w.index...), nil
 	}
