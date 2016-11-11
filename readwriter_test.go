@@ -23,15 +23,33 @@ func (s *ReadWriterSuite) SetUpSuite(c *C) {
 }
 
 func (s *ReadWriterSuite) TestWriteRead(c *C) {
-	tmpFile, err := os.Create(filepath.Join(s.tmpDir, c.TestName()))
+	path := filepath.Join(s.tmpDir, c.TestName())
+	tmpFile, err := os.Create(path)
 	c.Assert(err, IsNil)
 	c.Assert(tmpFile, NotNil)
+	s.testWriteRead(c, tmpFile, 0)
+	c.Assert(tmpFile.Close(), IsNil)
 
-	rw, err := siva.NewReaderWriter(tmpFile)
+	tmpFile, err = os.OpenFile(path, os.O_RDWR, 0)
+	c.Assert(err, IsNil)
+	c.Assert(tmpFile, NotNil)
+	s.testWriteRead(c, tmpFile, 1)
+	c.Assert(tmpFile.Close(), IsNil)
+
+	tmpFile, err = os.OpenFile(path, os.O_RDWR, 0)
+	c.Assert(err, IsNil)
+	c.Assert(tmpFile, NotNil)
+	s.testWriteRead(c, tmpFile, 2)
+	c.Assert(tmpFile.Close(), IsNil)
+}
+
+func (s *ReadWriterSuite) testWriteRead(c *C, f *os.File, iter int) {
+	rw, err := siva.NewReaderWriter(f)
 	c.Assert(err, IsNil)
 	c.Assert(rw, NotNil)
 
-	for i := 0; i < 100; i++ {
+	iters := 100
+	for i := 0; i < iters; i++ {
 		curName := fmt.Sprintf("foo-%d", i)
 		content := strings.Repeat("#", i)
 
@@ -49,7 +67,7 @@ func (s *ReadWriterSuite) TestWriteRead(c *C) {
 
 		index, err := rw.Index()
 		c.Assert(err, IsNil)
-		c.Assert(len(index), Equals, i+1)
+		c.Assert(len(index), Equals, iters*iter + i+1)
 
 		e := index.Find(curName)
 		c.Assert(e, NotNil)
