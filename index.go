@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"fmt"
 	"io"
+	"path/filepath"
 	"sort"
 	"time"
-	"path/filepath"
 )
 
 var (
@@ -34,21 +35,26 @@ type Index []*IndexEntry
 // file
 func (i *Index) ReadFrom(r io.ReadSeeker, endBlock uint64) error {
 	if _, err := r.Seek(int64(endBlock)-indexFooterSize, io.SeekStart); err != nil {
-		return err
+		return &IndexReadError{err}
 	}
 
 	f, err := i.readFooter(r)
 	if err != nil {
-		return err
+		return &IndexReadError{err}
 	}
 
 	startingPos := int64(f.IndexSize) + indexFooterSize
 	if _, err := r.Seek(-startingPos, io.SeekCurrent); err != nil {
-		return err
+		return &IndexReadError{err}
 	}
 
 	defer sort.Sort(i)
-	return i.readIndex(r, f, endBlock)
+	err = i.readIndex(r, f, endBlock)
+	if err != nil {
+		return &IndexReadError{err}
+	}
+
+	return nil
 }
 
 func (i *Index) readFooter(r io.Reader) (*IndexFooter, error) {
@@ -128,18 +134,18 @@ func (i *Index) WriteTo(w io.Writer) error {
 	}
 
 	if _, err := hw.Write(IndexSignature); err != nil {
-		return err
+		return &IndexWriteError{err}
 	}
 
 	if err := binary.Write(hw, binary.BigEndian, IndexVersion); err != nil {
-		return err
+		return &IndexWriteError{err}
 	}
 
 	var blockSize uint64
 	for _, e := range *i {
 		blockSize += e.Size
 		if err := e.WriteTo(hw); err != nil {
-			return err
+			return &IndexWriteError{err}
 		}
 	}
 
@@ -148,7 +154,7 @@ func (i *Index) WriteTo(w io.Writer) error {
 	f.CRC32 = hw.Checksum()
 
 	if err := f.WriteTo(hw); err != nil {
-		return err
+		return &IndexWriteError{err}
 	}
 
 	return nil
@@ -362,4 +368,20 @@ func readIndexAt(r io.ReadSeeker, offset uint64) (Index, error) {
 
 	i = append(i, previ...)
 	return i, nil
+}
+
+type IndexReadError struct {
+	Err error
+}
+
+func (e *IndexReadError) Error() string {
+	return fmt.Sprintf("index read failed: %s", e.Err.Error())
+}
+
+type IndexWriteError struct {
+	Err error
+}
+
+func (e *IndexWriteError) Error() string {
+	return fmt.Sprintf("index write failed: %s", e.Err.Error())
 }
