@@ -6,7 +6,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"syscall"
 
 	"gopkg.in/src-d/go-siva.v1"
 )
@@ -106,7 +105,7 @@ func (c *CmdPack) packDir(fullpath string) error {
 }
 
 func (c *CmdPack) packFile(fullpath string, fi os.FileInfo) error {
-	if c.sameFile(c.fi, fi) {
+	if os.SameFile(c.fi, fi) {
 		fmt.Fprintf(os.Stderr,
 			"skipping %q, cannot archive the target file\n", fullpath)
 		return nil
@@ -118,11 +117,6 @@ func (c *CmdPack) packFile(fullpath string, fi os.FileInfo) error {
 	}
 
 	return c.writeFile(fullpath, fi)
-}
-
-func (c *CmdPack) sameFile(a, b os.FileInfo) bool {
-	// TODO: only works in linux
-	return a.Sys().(*syscall.Stat_t).Ino == b.Sys().(*syscall.Stat_t).Ino
 }
 
 func (c *CmdPack) writeFileHeader(fullpath string, fi os.FileInfo) error {
