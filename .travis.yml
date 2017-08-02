@@ -1,20 +1,31 @@
 language: go
 
+go_import_path: gopkg.in/src-d/go-siva.v1
+
 go:
-  - 1.7
+  - 1.8
   - tip
 
 matrix:
+  fast_finish: true
   allow_failures:
     - go: tip
-    
+
 install:
-  - rm -rf $GOPATH/src/gopkg.in/src-d
-  - mkdir -p $GOPATH/src/gopkg.in/src-d
-  - ln -s $PWD $GOPATH/src/gopkg.in/src-d/go-siva.v1
-  - cd $GOPATH/src/gopkg.in/src-d/go-siva.v1
-  - go get -v -t ./...
-
-
+  - make dependencies
+    
 script:
-  - go test -v ./...
+  - make test-coverage
+
+before_deploy:
+  - make packages
+
+deploy:
+  provider: releases
+  api_key: $GITHUB_TOKEN 
+  file_glob: true
+  file: build/*.tar.gz
+  skip_cleanup: true
+  on:
+    tags: true
+
