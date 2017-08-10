@@ -24,13 +24,13 @@ func (s *ReaderSuite) TestIndexOverwrittenFiles(c *C) {
 	s.testIndex(c, "fixtures/overwritten.siva")
 }
 
-
 func (s *ReaderSuite) testIndex(c *C, fixture string) {
-	f, err := os.Open("fixtures/blocks.siva")
+	f, err := os.Open(fixture)
 	c.Assert(err, IsNil)
 
 	r := NewReader(f)
 	i, err := r.Index()
+	i = i.Filter()
 	c.Assert(err, IsNil)
 	c.Assert(i, HasLen, 3)
 	for j, e := range i {
