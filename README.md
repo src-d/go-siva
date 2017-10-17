@@ -10,7 +10,7 @@ The library implements a very similar API to the go [tar package](https://golang
 
 - [Library reference](http://godoc.org/gopkg.in/src-d/go-siva.v1)
 - [Command-line interface](#cli)
-- [Format specification](SPEC.md)
+- [Format specification](https://github.com/src-d/go-siva/blob/master/SPEC.md)
 
 
 Installation
