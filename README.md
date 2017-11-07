@@ -2,7 +2,7 @@
 
 _śiva_ stand for <b>s</b>eekable <b>i</b>ndexed <b>b</b>lock <b>a</b>rchiver
 
-_śiva_ is archive format very similar to tar or zip, focused on allowing: constant-time random file access, seekable access to the contained files and concatenable archive files 
+_śiva_ is archive format very similar to tar or zip, focused on allowing: constant-time random file access, seekable access to the contained files and concatenable archive files
 
 ![siva](https://cloud.githubusercontent.com/assets/1573114/19213424/8a97b7ee-8d6c-11e6-9c84-ddb58862dd94.png)
 
@@ -59,10 +59,10 @@ for _, file := range files {
 if err := w.Close(); err != nil {
     log.Fatalln(err)
 }
-``` 
+```
 
 
-Reading from a siva file: 
+Reading from a siva file:
 ```go
 // Open the siva archive for reading.
 file := bytes.NewReader(buf.Bytes())
@@ -108,6 +108,13 @@ Available commands:
   unpack   Extract to disk from the archive.
   version  Show the version information.
 ```
+
+Other comments
+-----------------------
+
+- The `Index Signature` is specified as a sequence of 3 bytes. Go uses byte as an alias for uint8.
+- `File Mode` in an `Index entry`, see [issue](https://github.com/src-d/go-siva/issues/11).
+- This implementation left in the client of the library side the task of check the integrity of the file contents. It just checks for the `Index` integrity.
 
 License
 -------
