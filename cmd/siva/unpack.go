@@ -41,11 +41,7 @@ func (c *CmdUnpack) Execute(args []string) error {
 	}
 
 	defer c.close()
-	if err := c.do(); err != nil {
-		return err
-	}
-
-	return nil
+	return c.do()
 }
 
 func (c *CmdUnpack) validate() error {

@@ -169,7 +169,7 @@ func (s Index) Less(i, j int) bool { return s[i].absStart < s[j].absStart }
 func (i *Index) Filter() Index {
 	var f Index
 
-	seen := make(map[string]bool, 0)
+	seen := make(map[string]bool)
 	for j := len(*i) - 1; j >= 0; j-- {
 		e := (*i)[j]
 

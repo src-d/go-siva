@@ -41,11 +41,7 @@ func (c *CmdPack) do() error {
 	}
 
 	defer c.close()
-	if err := c.pack(); err != nil {
-		return err
-	}
-
-	return nil
+	return c.pack()
 }
 
 func (c *CmdPack) validate() error {
