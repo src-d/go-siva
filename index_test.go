@@ -5,6 +5,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	. "gopkg.in/check.v1"
 )
 
@@ -41,14 +43,16 @@ func (s *IndexSuite) TestIndexFooterIdempotent(c *C) {
 	footer := &IndexFooter{}
 	err = footer.ReadFrom(buf)
 	c.Assert(err, IsNil)
-	c.Assert(footer, DeepEquals, expected)
+	if diff := cmp.Diff(expected, footer, cmpopts.IgnoreUnexported(IndexFooter{})); diff != "" {
+		c.Fatalf("IndexFooter differs:\n%s", diff)
+	}
 }
 
 func (s *IndexSuite) TestIndexEntryIdempotent(c *C) {
 	expected := &IndexEntry{}
 	expected.Name = "foo"
 	expected.Mode = 0644
-	expected.ModTime = time.Unix(0, time.Now().UnixNano())
+	expected.ModTime = time.Now()
 	expected.Start = 84
 	expected.Size = 42
 	expected.CRC32 = 4242
@@ -61,7 +65,9 @@ func (s *IndexSuite) TestIndexEntryIdempotent(c *C) {
 	entry := &IndexEntry{}
 	err = entry.ReadFrom(buf)
 	c.Assert(err, IsNil)
-	c.Assert(entry, DeepEquals, expected)
+	if diff := cmp.Diff(expected, entry, cmpopts.IgnoreUnexported(IndexEntry{})); diff != "" {
+		c.Fatalf("IndexEntry differs:\n%s", diff)
+	}
 }
 
 func (s *IndexSuite) TestFilter(c *C) {
