@@ -67,7 +67,7 @@ func (s *ReadWriterSuite) testWriteRead(c *C, f *os.File, iter int) {
 
 		index, err := rw.Index()
 		c.Assert(err, IsNil)
-		c.Assert(len(index), Equals, iters*iter + i+1)
+		c.Assert(len(index), Equals, iters*iter+i+1)
 
 		e := index.Find(curName)
 		c.Assert(e, NotNil)
@@ -128,7 +128,7 @@ func (s *ReadWriterSuite) TestOverwriteExisting(c *C) {
 	c.Assert(err, IsNil)
 	written, err := ioutil.ReadAll(sr)
 	c.Assert(err, IsNil)
-	c.Assert(string(written), DeepEquals, "foo")
+	c.Assert(string(written), Equals, "foo")
 
 	err = rw.WriteHeader(&siva.Header{
 		Name: "foo",
@@ -148,7 +148,7 @@ func (s *ReadWriterSuite) TestOverwriteExisting(c *C) {
 	c.Assert(err, IsNil)
 	written, err = ioutil.ReadAll(sr)
 	c.Assert(err, IsNil)
-	c.Assert(string(written), DeepEquals, "bar")
+	c.Assert(string(written), Equals, "bar")
 	c.Assert(rw.Close(), IsNil)
 }
 
