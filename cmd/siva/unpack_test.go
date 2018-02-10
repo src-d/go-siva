@@ -16,7 +16,7 @@ var _ = Suite(&UnpackSuite{})
 
 func (s *UnpackSuite) SetUpTest(c *C) {
 	var err error
-	s.folder, err = ioutil.TempDir("/tmp/", "siva-cmd-unpack")
+	s.folder, err = ioutil.TempDir("", "siva-cmd-unpack")
 	c.Assert(err, IsNil)
 }
 

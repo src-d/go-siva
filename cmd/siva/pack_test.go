@@ -22,7 +22,7 @@ var _ = Suite(&PackSuite{})
 
 func (s *PackSuite) SetUpTest(c *C) {
 	var err error
-	s.folder, err = ioutil.TempDir("/tmp/", "siva-cmd-pack")
+	s.folder, err = ioutil.TempDir("", "siva-cmd-pack")
 	c.Assert(err, IsNil)
 
 	err = os.Mkdir(filepath.Join(s.folder, "files"), 0766)
@@ -45,7 +45,7 @@ func (s *PackSuite) TearDownTest(c *C) {
 
 func (s *PackSuite) TestValidate(c *C) {
 	cmd := &CmdPack{}
-	cmd.Args.File = filepath.Join(s.folder, "foo.siva")
+	cmd.Args.File = filepath.Join(s.folder, "validate.siva")
 
 	err := cmd.Execute(nil)
 	c.Assert(err, NotNil)
@@ -53,7 +53,7 @@ func (s *PackSuite) TestValidate(c *C) {
 
 func (s *PackSuite) TestBasic(c *C) {
 	cmd := &CmdPack{}
-	cmd.Args.File = filepath.Join(s.folder, "foo.siva")
+	cmd.Args.File = filepath.Join(s.folder, "basic.siva")
 	cmd.Input.Files = s.files
 
 	err := cmd.Execute(nil)
@@ -70,11 +70,13 @@ func (s *PackSuite) TestBasic(c *C) {
 	i, err := r.Index()
 	c.Assert(err, IsNil)
 	c.Assert(i, HasLen, 3)
+
+	c.Assert(f.Close(), IsNil)
 }
 
 func (s *PackSuite) TestDir(c *C) {
 	cmd := &CmdPack{}
-	cmd.Args.File = filepath.Join(s.folder, "foo.siva")
+	cmd.Args.File = filepath.Join(s.folder, "dir.siva")
 	cmd.Input.Files = []string{filepath.Join(s.folder, "files")}
 
 	err := cmd.Execute(nil)
@@ -91,13 +93,15 @@ func (s *PackSuite) TestDir(c *C) {
 	i, err := r.Index()
 	c.Assert(err, IsNil)
 	c.Assert(i, HasLen, 3)
+
+	c.Assert(f.Close(), IsNil)
 }
 
 func (s *PackSuite) TestAppend(c *C) {
 	cmd := &CmdPack{}
-	cmd.Args.File = filepath.Join(s.folder, "foo.siva")
-	cmd.Input.Files = s.files[1:]
 
+	cmd.Args.File = filepath.Join(s.folder, "append.siva")
+	cmd.Input.Files = s.files[1:]
 	err := cmd.Execute(nil)
 	c.Assert(err, IsNil)
 
@@ -117,6 +121,8 @@ func (s *PackSuite) TestAppend(c *C) {
 	i, err := r.Index()
 	c.Assert(err, IsNil)
 	c.Assert(i, HasLen, 3)
+
+	c.Assert(f.Close(), IsNil)
 }
 
 type fileFixture struct {

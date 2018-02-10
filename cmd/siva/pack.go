@@ -139,6 +139,7 @@ func (c *CmdPack) writeFile(fullpath string, fi os.FileInfo) error {
 		return err
 	}
 
+	defer f.Close()
 	n, err := io.Copy(c.w, f)
 	if err != nil {
 		return err
