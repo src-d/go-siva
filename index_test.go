@@ -2,6 +2,7 @@ package siva
 
 import (
 	"bytes"
+	"runtime"
 	"sort"
 	"time"
 
@@ -103,4 +104,52 @@ func (s *IndexSuite) TestFind(c *C) {
 	e := i.Find("bar")
 	c.Assert(e, NotNil)
 	c.Assert(e.Start, Equals, uint64(2))
+}
+
+func (s *IndexSuite) TestToSafePathsWindows(c *C) {
+	if runtime.GOOS != "windows" {
+		c.Skip("windows only")
+	}
+
+	i := Index{
+		{Header: Header{Name: `C:\foo\bar`}, Start: 1},
+		{Header: Header{Name: `\\network\share\foo\bar`}, Start: 2},
+		{Header: Header{Name: `/foo/bar`}, Start: 3},
+		{Header: Header{Name: `../bar`}, Start: 4},
+		{Header: Header{Name: `foo/bar/../../baz`}, Start: 5},
+	}
+
+	f := i.ToSafePaths()
+	expected := Index{
+		{Header: Header{Name: `foo/bar`}, Start: 1},
+		{Header: Header{Name: `foo/bar`}, Start: 2},
+		{Header: Header{Name: `foo/bar`}, Start: 3},
+		{Header: Header{Name: `bar`}, Start: 4},
+		{Header: Header{Name: `baz`}, Start: 5},
+	}
+	c.Assert(f, DeepEquals, expected)
+}
+
+func (s *IndexSuite) TestToSafePathsNotWindows(c *C) {
+	if runtime.GOOS == "windows" {
+		c.Skip("posix only")
+	}
+
+	i := Index{
+		{Header: Header{Name: `C:\foo\bar`}, Start: 1},
+		{Header: Header{Name: `\\network\share\foo\bar`}, Start: 2},
+		{Header: Header{Name: `/foo/bar`}, Start: 3},
+		{Header: Header{Name: `../bar`}, Start: 4},
+		{Header: Header{Name: `foo/bar/../../baz`}, Start: 5},
+	}
+
+	f := i.ToSafePaths()
+	expected := Index{
+		{Header: Header{Name: `C:\foo\bar`}, Start: 1},
+		{Header: Header{Name: `\\network\share\foo\bar`}, Start: 2},
+		{Header: Header{Name: `foo/bar`}, Start: 3},
+		{Header: Header{Name: `bar`}, Start: 4},
+		{Header: Header{Name: `baz`}, Start: 5},
+	}
+	c.Assert(f, DeepEquals, expected)
 }
