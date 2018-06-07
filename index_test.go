@@ -52,7 +52,7 @@ func (s *IndexSuite) TestIndexEntryIdempotent(c *C) {
 	expected := &IndexEntry{}
 	expected.Name = "foo"
 	expected.Mode = 0644
-	expected.ModTime = time.Now()
+	expected.ModTime = time.Now().Local()
 	expected.Start = 84
 	expected.Size = 42
 	expected.CRC32 = 4242
