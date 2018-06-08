@@ -14,7 +14,6 @@ import (
 
 const writeFlagsDefault = os.O_WRONLY | os.O_CREATE | os.O_TRUNC | os.O_EXCL
 const writeFlagsOverwrite = os.O_WRONLY | os.O_CREATE | os.O_TRUNC
-const defaultPerms = 0755
 
 type CmdUnpack struct {
 	cmd
