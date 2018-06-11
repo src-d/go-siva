@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 
 	"gopkg.in/src-d/go-siva.v1"
 
@@ -128,6 +129,10 @@ func (c *CmdUnpack) extract(entry *siva.IndexEntry) error {
 func (c *CmdUnpack) createFile(entry *siva.IndexEntry) (*os.File, error) {
 	dstName := filepath.Join(c.Output.Path, entry.Name)
 
+	if err := c.checkSafePath(c.Output.Path, dstName); err != nil {
+		return nil, err
+	}
+
 	dir := filepath.Dir(dstName)
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return nil, fmt.Errorf("unable to create dir %q: %s\n", dir, err)
@@ -144,4 +149,20 @@ func (c *CmdUnpack) createFile(entry *siva.IndexEntry) (*os.File, error) {
 	}
 
 	return dst, nil
+}
+
+func (c *CmdUnpack) checkSafePath(base, target string) error {
+	rel, err := filepath.Rel(base, target)
+	if err != nil {
+		return fmt.Errorf("target path (%s) is not relative to base (%s): %s\n",
+			target, base, err)
+	}
+
+	rel = filepath.ToSlash(rel)
+	if strings.HasPrefix(rel, "../") {
+		return fmt.Errorf("target path (%s) outside base (%s) is not allowed",
+			target, base)
+	}
+
+	return nil
 }

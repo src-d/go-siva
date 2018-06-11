@@ -117,7 +117,7 @@ func (c *CmdPack) packFile(fullpath string, fi os.FileInfo) error {
 
 func (c *CmdPack) writeFileHeader(fullpath string, fi os.FileInfo) error {
 	h := &siva.Header{
-		Name:    cleanPath(fullpath),
+		Name:    siva.ToSafePath(fullpath),
 		Mode:    fi.Mode(),
 		ModTime: fi.ModTime(),
 	}
@@ -150,21 +150,4 @@ func (c *CmdPack) writeFile(fullpath string, fi os.FileInfo) error {
 	}
 
 	return c.w.Flush()
-}
-
-func cleanPath(path string) string {
-	path = filepath.Clean(path)
-	for len(path) >= 3 && path[:3] == "../" {
-		path = path[3:]
-	}
-
-	for len(path) >= 2 && path[:2] == "./" {
-		path = path[2:]
-	}
-
-	if len(path) > 1 && path[:1] == "/" {
-		path = path[1:]
-	}
-
-	return path
 }

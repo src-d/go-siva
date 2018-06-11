@@ -8,6 +8,7 @@ import (
 	"io"
 	"path/filepath"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -186,6 +187,22 @@ func (i *Index) Filter() Index {
 	}
 
 	sort.Sort(f)
+	return f
+}
+
+// ToSafePaths creates a new index where all entry names are transformed to safe
+// paths using the top-level `ToSafePath` function. If you are using siva to
+// extract files to the file-system, you should either use this function or
+// perform your own validation and normalization.
+func (i *Index) ToSafePaths() Index {
+	f := make(Index, len(*i))
+
+	for idx, e := range *i {
+		e = &*e
+		e.Name = ToSafePath(e.Name)
+		f[idx] = e
+	}
+
 	return f
 }
 
@@ -384,4 +401,30 @@ type IndexWriteError struct {
 
 func (e *IndexWriteError) Error() string {
 	return fmt.Sprintf("index write failed: %s", e.Err.Error())
+}
+
+// ToSafePath transforms a filesystem path to one that is safe to
+// use as a relative path on the native filesystem:
+//
+// - Removes drive and network share on Windows.
+// - Does regular clean up (removing `/./` parts).
+// - Removes any leading `../`.
+// - Removes leading `/`.
+//
+// This is a convenience function to implement siva file extractors that are not
+// vulnerable to zip slip and similar vulnerabilities. However, for Windows
+// absolute paths (with drive or network share) it does not give consistent
+// results across platforms.
+//
+// If your application relies on using absolute paths, you should not use this
+// and you are encouraged to do your own validation and normalization.
+func ToSafePath(path string) string {
+	volume := filepath.VolumeName(path)
+	if volume != "" {
+		path = strings.Replace(path, volume, "", 1)
+	}
+
+	path = filepath.Join(string(filepath.Separator), path)
+	path = filepath.ToSlash(path)
+	return path[1:]
 }

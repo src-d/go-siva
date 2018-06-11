@@ -95,3 +95,16 @@ func (s *UnpackSuite) TestOverwrite(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(dir, HasLen, 3)
 }
+
+func (s *UnpackSuite) TestZipSlip(c *C) {
+	cmd := &CmdUnpack{}
+	cmd.Output.Path = filepath.Join(s.folder, "files/inside")
+	cmd.Args.File = "../../fixtures/zipslip.siva"
+
+	err := cmd.Execute(nil)
+	c.Assert(err, NotNil)
+
+	_, err = os.Stat(filepath.Join(s.folder, "files"))
+	c.Assert(err, NotNil)
+	c.Assert(os.IsNotExist(err), Equals, true)
+}
