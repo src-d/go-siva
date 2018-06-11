@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	. "gopkg.in/check.v1"
 )
@@ -39,6 +40,10 @@ func (s *UnpackSuite) TestBasic(c *C) {
 	c.Assert(dir, HasLen, 3)
 
 	perms := []string{"-rwxr-xr-x", "-rw-------", "-rw-r--r--"}
+	if runtime.GOOS == "windows" {
+		perms = []string{"-rw-rw-rw-", "-rw-rw-rw-", "-rw-rw-rw-"}
+	}
+
 	for i, f := range dir {
 		c.Assert(f.Name(), Equals, files[i].Name)
 

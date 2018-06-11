@@ -71,7 +71,11 @@ func (s *PackSuite) TestBasic(c *C) {
 
 	fi, err := f.Stat()
 	c.Assert(err, IsNil)
-	c.Assert(int(fi.Size()), Equals, 376)
+	size := 249
+	for _, file := range s.files {
+		size += len(cleanPath(file))
+	}
+	c.Assert(int(fi.Size()), Equals, size)
 
 	r := siva.NewReader(f)
 	i, err := r.Index()
@@ -94,7 +98,11 @@ func (s *PackSuite) TestDir(c *C) {
 
 	fi, err := f.Stat()
 	c.Assert(err, IsNil)
-	c.Assert(int(fi.Size()), Equals, 376)
+	size := 249
+	for _, file := range s.files {
+		size += len(cleanPath(file))
+	}
+	c.Assert(int(fi.Size()), Equals, size)
 
 	r := siva.NewReader(f)
 	i, err := r.Index()
@@ -122,7 +130,12 @@ func (s *PackSuite) TestAppend(c *C) {
 
 	fi, err := f.Stat()
 	c.Assert(err, IsNil)
-	c.Assert(int(fi.Size()), Equals, 404)
+
+	size := 277
+	for _, file := range s.files {
+		size += len(cleanPath(file))
+	}
+	c.Assert(int(fi.Size()), Equals, size)
 
 	r := siva.NewReader(f)
 	i, err := r.Index()
