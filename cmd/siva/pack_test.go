@@ -73,7 +73,7 @@ func (s *PackSuite) TestBasic(c *C) {
 	c.Assert(err, IsNil)
 	size := 249
 	for _, file := range s.files {
-		size += len(cleanPath(file))
+		size += len(siva.ToSafePath(file))
 	}
 	c.Assert(int(fi.Size()), Equals, size)
 
@@ -100,7 +100,7 @@ func (s *PackSuite) TestDir(c *C) {
 	c.Assert(err, IsNil)
 	size := 249
 	for _, file := range s.files {
-		size += len(cleanPath(file))
+		size += len(siva.ToSafePath(file))
 	}
 	c.Assert(int(fi.Size()), Equals, size)
 
@@ -133,7 +133,7 @@ func (s *PackSuite) TestAppend(c *C) {
 
 	size := 277
 	for _, file := range s.files {
-		size += len(cleanPath(file))
+		size += len(siva.ToSafePath(file))
 	}
 	c.Assert(int(fi.Size()), Equals, size)
 
