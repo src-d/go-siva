@@ -135,6 +135,7 @@ func (c *CmdPack) writeFileHeader(fullpath string, fi os.FileInfo) error {
 
 func (c *CmdPack) writeFile(fullpath string, fi os.FileInfo) error {
 	f, err := os.Open(fullpath)
+	defer f.Close()
 	if err != nil {
 		return err
 	}
