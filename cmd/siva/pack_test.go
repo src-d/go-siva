@@ -44,9 +44,9 @@ func (s *PackSuite) SetUpTest(c *C) {
 }
 
 func (s *PackSuite) TearDownTest(c *C) {
-	err := os.RemoveAll(s.folder)
+	err := os.Chdir(s.cwd)
 	c.Assert(err, IsNil)
-	err = os.Chdir(s.cwd)
+	err = os.RemoveAll(s.folder)
 	c.Assert(err, IsNil)
 }
 
@@ -174,6 +174,8 @@ func (s *PackSuite) TestCleanPaths(c *C) {
 	entry := i.Find("gopher.txt")
 	c.Assert(entry, NotNil)
 	c.Assert(entry.Name, Equals, "gopher.txt")
+
+	c.Assert(f.Close(), IsNil)
 }
 
 type fileFixture struct {

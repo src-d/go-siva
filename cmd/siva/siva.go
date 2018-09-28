@@ -70,6 +70,7 @@ func (c *cmd) buildWriter(append bool) (err error) {
 
 	c.fi, err = c.f.Stat()
 	if err != nil {
+		_ = c.f.Close()
 		return err
 	}
 
