@@ -44,9 +44,9 @@ func (s *PackSuite) SetUpTest(c *C) {
 }
 
 func (s *PackSuite) TearDownTest(c *C) {
-	err := os.RemoveAll(s.folder)
+	err := os.Chdir(s.cwd)
 	c.Assert(err, IsNil)
-	err = os.Chdir(s.cwd)
+	err = os.RemoveAll(s.folder)
 	c.Assert(err, IsNil)
 }
 
@@ -73,7 +73,7 @@ func (s *PackSuite) TestBasic(c *C) {
 	c.Assert(err, IsNil)
 	size := 249
 	for _, file := range s.files {
-		size += len(cleanPath(file))
+		size += len(siva.ToSafePath(file))
 	}
 	c.Assert(int(fi.Size()), Equals, size)
 
@@ -100,7 +100,7 @@ func (s *PackSuite) TestDir(c *C) {
 	c.Assert(err, IsNil)
 	size := 249
 	for _, file := range s.files {
-		size += len(cleanPath(file))
+		size += len(siva.ToSafePath(file))
 	}
 	c.Assert(int(fi.Size()), Equals, size)
 
@@ -133,7 +133,7 @@ func (s *PackSuite) TestAppend(c *C) {
 
 	size := 277
 	for _, file := range s.files {
-		size += len(cleanPath(file))
+		size += len(siva.ToSafePath(file))
 	}
 	c.Assert(int(fi.Size()), Equals, size)
 
@@ -174,6 +174,8 @@ func (s *PackSuite) TestCleanPaths(c *C) {
 	entry := i.Find("gopher.txt")
 	c.Assert(entry, NotNil)
 	c.Assert(entry.Name, Equals, "gopher.txt")
+
+	c.Assert(f.Close(), IsNil)
 }
 
 type fileFixture struct {

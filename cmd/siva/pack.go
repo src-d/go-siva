@@ -40,8 +40,12 @@ func (c *CmdPack) do() error {
 		return err
 	}
 
-	defer c.close()
-	return c.pack()
+	if err := c.pack(); err != nil {
+		_ = c.close()
+		return err
+	}
+
+	return c.close()
 }
 
 func (c *CmdPack) validate() error {
