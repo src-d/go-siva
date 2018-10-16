@@ -161,13 +161,25 @@ func (i *Index) WriteTo(w io.Writer) error {
 	return nil
 }
 
-func (s Index) Len() int           { return len(s) }
-func (s Index) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+// Len implements sort.Interface.
+func (s Index) Len() int { return len(s) }
+
+// Swap implements sort.Interface.
+func (s Index) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+
+// Less implements sort.Interface.
 func (s Index) Less(i, j int) bool { return s[i].absStart < s[j].absStart }
 
 // Filter returns a filtered version of the current Index removing duplicates
 // keeping the latest versions and filtering all the deleted files
 func (i *Index) Filter() Index {
+	index := i.filter()
+	sort.Sort(index)
+
+	return index
+}
+
+func (i *Index) filter() Index {
 	var f Index
 
 	seen := make(map[string]bool)
@@ -186,7 +198,6 @@ func (i *Index) Filter() Index {
 		f = append(f, e)
 	}
 
-	sort.Sort(f)
 	return f
 }
 
@@ -234,6 +245,106 @@ func (i Index) Glob(pattern string) ([]*IndexEntry, error) {
 
 	return matches, nil
 }
+
+// OrderedIndex is a specialized index lexicographically ordered. It has
+// methods to add or delete IndexEntries and maintain its order. Also has
+// as faster Find method.
+type OrderedIndex Index
+
+// Pos gets the position of the file in the index or where it should be
+// inserted if it's not already there.
+func (o OrderedIndex) Pos(path string) int {
+	if len(o) == 0 {
+		return 0
+	}
+
+	pos := sort.Search(len(o), func(i int) bool {
+		return o[i].Name >= path
+	})
+
+	return pos
+}
+
+// Update adds or deletes an IndexEntry to the index depending on the
+// FlagDeleted value.
+func (o OrderedIndex) Update(e *IndexEntry) OrderedIndex {
+	if e == nil {
+		return o
+	}
+
+	if e.Flags&FlagDeleted == 0 {
+		return o.Add(e)
+	}
+
+	return o.Delete(e.Name)
+}
+
+// Add returns an updated index with the new IndexEntry.
+func (o OrderedIndex) Add(e *IndexEntry) OrderedIndex {
+	if e == nil {
+		return o
+	}
+
+	if len(o) == 0 {
+		return OrderedIndex{e}
+	}
+
+	path := e.Name
+	pos := o.Pos(path)
+	if pos < len(o) && o[pos].Name == path {
+		o[pos] = e
+		return o
+	}
+
+	if pos == len(o) {
+		return append(o, e)
+	}
+
+	return append(o[:pos], append(Index{e}, o[pos:]...)...)
+}
+
+// Delete returns an updated index with the IndexEntry for the path deleted.
+func (o OrderedIndex) Delete(path string) OrderedIndex {
+	if len(o) == 0 {
+		return o
+	}
+
+	pos := o.Pos(path)
+	if pos < len(o) && o[pos].Name != path {
+		return o
+	}
+
+	return append(o[:pos], o[pos+1:]...)
+}
+
+// Find returns the IndexEntry for a path or nil. This version is faster than
+// Index.Find.
+func (o OrderedIndex) Find(path string) *IndexEntry {
+	if len(o) == 0 {
+		return nil
+	}
+
+	pos := o.Pos(path)
+	if pos >= 0 && pos < len(o) && o[pos].Name == path {
+		return o[pos]
+	}
+
+	return nil
+}
+
+// Sort orders the index lexicographically.
+func (o OrderedIndex) Sort() {
+	sort.Sort(o)
+}
+
+// Len implements sort.Interface.
+func (s OrderedIndex) Len() int { return len(s) }
+
+// Swap implements sort.Interface.
+func (s OrderedIndex) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+
+// Less implements sort.Interface.
+func (s OrderedIndex) Less(i, j int) bool { return s[i].Name < s[j].Name }
 
 type IndexEntry struct {
 	Header
