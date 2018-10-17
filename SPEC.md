@@ -57,14 +57,14 @@ Each index entry has the following fields:
 * Modification time as UNIX time in nanoseconds (int64).
 * Offset of the file content, relative to the beginning of the block (uint64).
 * Size of the file content (uint64).
-* CRC32 (uint32) (Integrity of the file content this entry point to).
+* CRC32 (uint32) (Integrity of the file content this entry points to).
 * Flags (uint32), supported flags: 0x0 (no flags), 0x1 (deleted).
 
 The index footer consists of:
 
 * Number of entries in the block (uint32).
 * Index size in bytes (uint64).
-* Block sie in bytes (uint64).
+* Block size in bytes (uint64).
 * CRC32 (uint32) (Integrity of: Signature + Version + Entries).
 
 All integers are encoded as big endian.
