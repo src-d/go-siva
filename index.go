@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"path/filepath"
+	"path"
 	"sort"
 	"strings"
 	"time"
@@ -19,7 +19,7 @@ var (
 	ErrInvalidSignature        = errors.New("invalid signature")
 	ErrEmptyIndex              = errors.New("empty index")
 	ErrUnsupportedIndexVersion = errors.New("unsupported index version")
-	ErrCRC32Missmatch          = errors.New("crc32 missmatch")
+	ErrCRC32Missmatch          = errors.New("crc32 mismatch")
 )
 
 const (
@@ -529,13 +529,75 @@ func (e *IndexWriteError) Error() string {
 //
 // If your application relies on using absolute paths, you should not use this
 // and you are encouraged to do your own validation and normalization.
-func ToSafePath(path string) string {
-	volume := filepath.VolumeName(path)
+func ToSafePath(p string) string {
+	volume := volumeName(p)
 	if volume != "" {
-		path = strings.Replace(path, volume, "", 1)
+		p = strings.Replace(p, volume, "", 1)
 	}
 
-	path = filepath.Join(string(filepath.Separator), path)
-	path = filepath.ToSlash(path)
-	return path[1:]
+	p = toSlash(p)
+	p = path.Join(posixSeparator, p)
+	return p[1:]
+}
+
+// These functions are copied from golang library path/filepath/path_windows.go
+// as we need them also in posix systems.
+
+const (
+	posixSeparator   = "/"
+	windowsSeparator = "\\"
+)
+
+func toSlash(path string) string {
+	return strings.Replace(path, windowsSeparator, posixSeparator, -1)
+}
+
+func fromSlash(path string) string {
+	return strings.Replace(path, posixSeparator, windowsSeparator, -1)
+}
+
+func volumeName(path string) string {
+	return path[:volumeNameLen(path)]
+}
+
+func isSlash(c uint8) bool {
+	return c == '\\' || c == '/'
+}
+
+// volumeNameLen returns length of the leading volume name on Windows.
+// It returns 0 elsewhere.
+func volumeNameLen(path string) int {
+	if len(path) < 2 {
+		return 0
+	}
+	// with drive letter
+	c := path[0]
+	if path[1] == ':' && ('a' <= c && c <= 'z' || 'A' <= c && c <= 'Z') {
+		return 2
+	}
+	// is it UNC? https://msdn.microsoft.com/en-us/library/windows/desktop/aa365247(v=vs.85).aspx
+	if l := len(path); l >= 5 && isSlash(path[0]) && isSlash(path[1]) &&
+		!isSlash(path[2]) && path[2] != '.' {
+		// first, leading `\\` and next shouldn't be `\`. its server name.
+		for n := 3; n < l-1; n++ {
+			// second, next '\' shouldn't be repeated.
+			if isSlash(path[n]) {
+				n++
+				// third, following something characters. its share name.
+				if !isSlash(path[n]) {
+					if path[n] == '.' {
+						break
+					}
+					for ; n < l; n++ {
+						if isSlash(path[n]) {
+							break
+						}
+					}
+					return n
+				}
+				break
+			}
+		}
+	}
+	return 0
 }
