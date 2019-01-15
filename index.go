@@ -219,6 +219,7 @@ func (i *Index) ToSafePaths() Index {
 
 // Find returns the first IndexEntry with the given name, if any
 func (i Index) Find(name string) *IndexEntry {
+	name = ToSafePath(name)
 	for _, e := range i {
 		if e.Name == name {
 			return e
@@ -231,9 +232,10 @@ func (i Index) Find(name string) *IndexEntry {
 // Glob returns all index entries whose name matches pattern or nil if there is
 // no matching entry. The syntax of patterns is the same as in filepath.Match.
 func (i Index) Glob(pattern string) ([]*IndexEntry, error) {
+	pattern = ToSafePath(pattern)
 	matches := []*IndexEntry{}
 	for _, e := range i {
-		m, err := filepath.Match(pattern, e.Name)
+		m, err := path.Match(pattern, e.Name)
 		if err != nil {
 			return nil, err
 		}

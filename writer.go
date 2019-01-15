@@ -49,6 +49,8 @@ func (w *writer) WriteHeader(h *Header) error {
 		Start:  w.position,
 	}
 
+	w.current.Name = ToSafePath(h.Name)
+
 	w.index = append(w.index, w.current)
 	w.oIndex = w.oIndex.Update(w.current)
 

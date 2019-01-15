@@ -97,12 +97,18 @@ func (s *IndexSuite) TestFind(c *C) {
 	i := Index{
 		{Header: Header{Name: "foo"}, Start: 1},
 		{Header: Header{Name: "bar"}, Start: 2},
+		{Header: Header{Name: "dir/file.txt"}, Start: 3},
 	}
 
 	sort.Sort(i)
+
 	e := i.Find("bar")
 	c.Assert(e, NotNil)
 	c.Assert(e.Start, Equals, uint64(2))
+
+	e = i.Find("dir\\file.txt")
+	c.Assert(e, NotNil)
+	c.Assert(e.Start, Equals, uint64(3))
 }
 
 func (s *IndexSuite) TestToSafePaths(c *C) {

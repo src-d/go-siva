@@ -81,6 +81,9 @@ func (s *ReaderSuite) TestSeekAndRead(c *C) {
 }
 
 func (s *ReaderSuite) TestIndexGlob(c *C) {
+	s.testIndexGlob(c, "*", []string{
+		"file.txt",
+	})
 	s.testIndexGlob(c, "*/*", []string{
 		"letters/a",
 		"letters/b",
@@ -94,6 +97,11 @@ func (s *ReaderSuite) TestIndexGlob(c *C) {
 		"letters/b",
 		"letters/c",
 	})
+	s.testIndexGlob(c, "numbers\\*", []string{
+		"numbers/1",
+		"numbers/2",
+		"numbers/3",
+	})
 	s.testIndexGlob(c, "nonexistent/*", []string{})
 }
 
@@ -104,7 +112,7 @@ func (s *ReaderSuite) testIndexGlob(c *C, pattern string, expected []string) {
 	r := NewReader(f)
 	i, err := r.Index()
 	c.Assert(err, IsNil)
-	c.Assert(i, HasLen, 6)
+	c.Assert(i, HasLen, 7)
 
 	matches, err := i.Glob(pattern)
 	c.Assert(err, IsNil)
