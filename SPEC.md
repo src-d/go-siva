@@ -52,7 +52,7 @@ at all.
 Each index entry has the following fields:
 
 * Byte length of the entry name (uint32).
-* Entry name (UTF-8 string).
+* Entry name (UTF-8 string in UNIX format).
 * UNIX mode (uint32) (see Go implementation [issue](https://github.com/src-d/go-siva/issues/11)).
 * Modification time as UNIX time in nanoseconds (int64).
 * Offset of the file content, relative to the beginning of the block (uint64).
