@@ -1,6 +1,7 @@
 package siva
 
 import (
+	"bytes"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -125,4 +126,26 @@ func (s *ReaderSuite) testIndexGlob(c *C, pattern string, expected []string) {
 	c.Assert(matchNames, DeepEquals, expected)
 
 	c.Assert(f.Close(), IsNil)
+}
+
+func (s *ReaderSuite) TestOffset(c *C) {
+	data, err := ioutil.ReadFile("fixtures/basic.siva")
+	c.Assert(err, IsNil)
+
+	indexOffset := uint64(len(data))
+	data = append(data, 0, 0, 0, 0, 0, 0, 0, 0)
+	buf := bytes.NewReader(data)
+
+	r := NewReader(buf)
+	_, err = r.Index()
+	_, ok := err.(*IndexReadError)
+	c.Assert(ok, Equals, true)
+
+	r = NewReaderWithOffset(buf, indexOffset)
+	i, err := r.Index()
+	c.Assert(err, IsNil)
+
+	entry := i.Find("gopher.txt")
+	c.Assert(entry, NotNil)
+	c.Assert(entry.Size, Equals, uint64(35))
 }

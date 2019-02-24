@@ -462,17 +462,22 @@ func readBinary(r io.Reader, data []interface{}) error {
 	return nil
 }
 
-func readIndex(r io.ReadSeeker) (Index, error) {
-	endLastBlock, err := r.Seek(0, io.SeekEnd)
-	if err != nil {
-		return nil, err
+func readIndex(r io.ReadSeeker, o uint64) (Index, error) {
+	endLastBlock := o
+	if endLastBlock == 0 {
+		ofs, err := r.Seek(0, io.SeekEnd)
+		if err != nil {
+			return nil, err
+		}
+
+		endLastBlock = uint64(ofs)
 	}
 
 	if endLastBlock == 0 {
 		return nil, ErrEmptyIndex
 	}
 
-	i, err := readIndexAt(r, uint64(endLastBlock))
+	i, err := readIndexAt(r, endLastBlock)
 	if err != nil {
 		return i, err
 	}

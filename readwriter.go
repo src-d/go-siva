@@ -15,7 +15,7 @@ func NewReaderWriter(rw io.ReadWriteSeeker) (*ReadWriter, error) {
 		return nil, ErrInvalidReaderAt
 	}
 
-	i, err := readIndex(rw)
+	i, err := readIndex(rw, 0)
 	if err != nil && err != ErrEmptyIndex {
 		return nil, err
 	}

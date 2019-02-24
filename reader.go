@@ -25,12 +25,23 @@ type reader struct {
 	getIndexFunc func() (Index, error)
 	current      *IndexEntry
 	pending      uint64
+	offset       uint64
 }
 
 // NewReader creates a new Reader reading from r, reader requires be seekable
 // and optionally should implement io.ReaderAt to make usage of the Get method
 func NewReader(r io.ReadSeeker) Reader {
 	return &reader{r: r}
+}
+
+// NewReaderWithOffset creates a new Reader giving the position of the index.
+// This is useful to open siva files that are being written or reading an
+// old index.
+func NewReaderWithOffset(r io.ReadSeeker, o uint64) Reader {
+	return &reader{
+		r:      r,
+		offset: o,
+	}
 }
 
 func newReaderWithIndex(r io.ReadSeeker, getIndexFunc func() (Index, error)) *reader {
@@ -46,7 +57,7 @@ func (r *reader) Index() (Index, error) {
 		return r.getIndexFunc()
 	}
 
-	return readIndex(r.r)
+	return readIndex(r.r, r.offset)
 }
 
 // Get returns a new io.SectionReader allowing concurrent read access to the
