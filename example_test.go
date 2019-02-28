@@ -22,8 +22,8 @@ func Example() {
 	var files = []struct {
 		Name, Body string
 	}{
-		{"readme.txt", "This archive contains some text files."},
 		{"gopher.txt", "Gopher names:\nGeorge\nGeoffrey\nGonzo"},
+		{"readme.txt", "This archive contains some text files."},
 		{"todo.txt", "Get animal handling license."},
 	}
 	for _, file := range files {
@@ -68,13 +68,13 @@ func Example() {
 	}
 
 	// Output:
-	// Contents of readme.txt:
-	// This archive contains some text files.
 	// Contents of gopher.txt:
 	// Gopher names:
 	// George
 	// Geoffrey
 	// Gonzo
+	// Contents of readme.txt:
+	// This archive contains some text files.
 	// Contents of todo.txt:
 	// Get animal handling license.
 }

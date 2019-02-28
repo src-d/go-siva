@@ -462,8 +462,11 @@ func readBinary(r io.Reader, data []interface{}) error {
 	return nil
 }
 
-func readIndex(r io.ReadSeeker, o uint64) (Index, error) {
-	endLastBlock := o
+// readIndex loads the index at offset's position or at the end of the file if
+// the offset is 0. It uses readIndexAt to load each of the indexes in the
+// chain.
+func readIndex(r io.ReadSeeker, offset uint64) (Index, error) {
+	endLastBlock := offset
 	if endLastBlock == 0 {
 		ofs, err := r.Seek(0, io.SeekEnd)
 		if err != nil {

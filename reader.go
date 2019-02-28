@@ -23,6 +23,7 @@ type reader struct {
 	r io.ReadSeeker
 
 	getIndexFunc func() (Index, error)
+	index        Index
 	current      *IndexEntry
 	pending      uint64
 	offset       uint64
@@ -57,7 +58,18 @@ func (r *reader) Index() (Index, error) {
 		return r.getIndexFunc()
 	}
 
-	return readIndex(r.r, r.offset)
+	if r.index == nil {
+		i, err := readIndex(r.r, r.offset)
+		if err != nil && err != ErrEmptyIndex {
+			return nil, err
+		}
+
+		index := OrderedIndex(i.filter())
+		index.Sort()
+		r.index = Index(index)
+	}
+
+	return r.index, nil
 }
 
 // Get returns a new io.SectionReader allowing concurrent read access to the
