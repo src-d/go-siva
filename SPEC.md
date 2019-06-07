@@ -53,7 +53,7 @@ Each index entry has the following fields:
 
 * Byte length of the entry name (uint32).
 * Entry name (UTF-8 string in UNIX format).
-* UNIX mode (uint32) (see Go implementation [issue](https://github.com/src-d/go-siva/issues/11)).
+* UNIX mode (uint32), [see below](#unix-mode-format).
 * Modification time as UNIX time in nanoseconds (int64).
 * Offset of the file content, relative to the beginning of the block (uint64).
 * Size of the file content (uint64).
@@ -68,6 +68,40 @@ The index footer consists of:
 * CRC32 (uint32) (Integrity of: Signature + Version + Entries).
 
 All integers are encoded as big endian.
+
+### Unix Mode Format
+
+The UNIX mode field has the following format:
+
+```
+     3 3 2 2 2 2 2 2 2 2 2 2 1 1 1 1 1 1 1 1 1 1
+bit  1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0 9 8 7 6 5 4 3 2 1 0
+  M +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ L
+  S |d|a|l|T|L|D|p|S|u|g|c|t|?| - - - - - - - - - |r|w|x|r|w|x|r|w|x| S
+  B +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+ B
+     @ _ _ _ @ @ @ @ _ _ @ _ @  ← file type bits  |owner|group|other|
+     | | | | | | | | | | | | | 	                     access perms
+     | | | | | | | | | | | | |- non-regular file
+     | | | | | | | | | | | \--- sticky
+     | | | | | | | | | | \----- character device (when D is set)
+     | | | | | | | | | \------- setgid
+     | | | | | | | | \--------- setuid
+     | | | | | | | \----------- Unix-domain socket
+     | | | | | | \------------- named pipe (FIFO)
+     | | | | | \--------------- device file
+     | | | | \----------------- symbolic link
+     | | | \------------------- temporary file (Plan 9 only)
+     | | \--------------------- exclusive use
+     | \----------------------- append-only
+     \------------------------- directory
+```
+
+All the bits not otherwise labelled are reserved for future use.
+
+**Note:** This layout is defined by the [Go `os` package](https://godoc.org/os#FileMode)
+and is _not_ the same layout as POSIX. The same layout is used on all
+systems. See [issue #11](https://github.com/src-d/go-siva/issues/11) for
+context.
 
 ## Limitations
 
