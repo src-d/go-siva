@@ -8,13 +8,12 @@ import (
 	"time"
 )
 
+// Flag carries a bitwise OR of flag values affecting an archive entry.
 type Flag uint32
 
 const (
-	_ Flag = iota // we discard the 0
-
-	//FlagDeleted should be used to identify when a file is deleted
-	FlagDeleted Flag = iota
+	// FlagDeleted is set to indicate when a file is deleted.
+	FlagDeleted Flag = 1 << iota
 )
 
 // Header contains the meta information from a file
