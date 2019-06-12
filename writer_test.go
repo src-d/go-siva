@@ -46,6 +46,23 @@ func (s *WriterSuite) TestFlushOnClose(c *C) {
 	c.Assert(err, Equals, ErrClosedWriter)
 }
 
+func (s *WriterSuite) TestDoubleFlushRegression(c *C) {
+	buf := new(bytes.Buffer)
+	w := NewWriter(buf)
+	const data = "foo"
+	c.Assert(w.WriteHeader(&Header{
+		Name: "test.txt",
+		Mode: 0640,
+	}), IsNil)
+	_, err := w.Write([]byte(data))
+	c.Assert(err, IsNil)
+	c.Assert(w.Flush(), IsNil)
+	want := *w.(*writer).index[0]
+	c.Assert(w.Close(), IsNil)
+	got := *w.(*writer).index[0]
+	c.Assert(got, Equals, want)
+}
+
 func (s *WriterSuite) TestWriterReaderIdempotent(c *C) {
 	buf := new(bytes.Buffer)
 	w := NewWriter(buf)
