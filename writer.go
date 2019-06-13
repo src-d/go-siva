@@ -74,28 +74,23 @@ func (w *writer) Write(b []byte) (int, error) {
 func (w *writer) Flush() error {
 	if w.closed {
 		return ErrClosedWriter
-	}
-
-	if w.current == nil {
+	} else if w.current == nil {
 		return ErrMissingHeader
 	}
 
 	w.current.Size = w.position - w.current.Start
 	w.current.CRC32 = w.w.Checksum()
+	w.current = nil
 	w.w.Reset()
-
 	return nil
 }
 
 func (w *writer) flushIfPending() error {
 	if w.closed {
 		return ErrClosedWriter
-	}
-
-	if w.current == nil {
+	} else if w.current == nil {
 		return nil
 	}
-
 	return w.Flush()
 }
 
