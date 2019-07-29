@@ -3,6 +3,8 @@ package siva
 import (
 	"bytes"
 	"sort"
+	"strconv"
+	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -129,4 +131,121 @@ func (s *IndexSuite) TestToSafePaths(c *C) {
 		{Header: Header{Name: `baz`}, Start: 5},
 	}
 	c.Assert(f, DeepEquals, expected)
+}
+
+func (s *IndexSuite) TestGlobPrefix(c *C) {
+	tests := []struct {
+		pattern  string
+		expected string
+	}{
+		{
+			pattern:  "simple",
+			expected: "simple",
+		},
+		{
+			pattern:  "*pattern",
+			expected: "",
+		},
+		{
+			pattern:  "pattern*",
+			expected: "pattern",
+		},
+		{
+			pattern:  "pat*tern*",
+			expected: "pat",
+		},
+		{
+			pattern:  "pat\\*tern*",
+			expected: "pat\\*tern",
+		},
+		{
+			pattern:  "?pattern",
+			expected: "",
+		},
+		{
+			pattern:  "pattern?",
+			expected: "pattern",
+		},
+		{
+			pattern:  "pat?tern*",
+			expected: "pat",
+		},
+		{
+			pattern:  "pat\\?tern?",
+			expected: "pat\\?tern",
+		},
+		{
+			pattern:  "[pattern",
+			expected: "",
+		},
+		{
+			pattern:  "pattern[",
+			expected: "pattern",
+		},
+		{
+			pattern:  "pat[tern*",
+			expected: "pat",
+		},
+		{
+			pattern:  "pat\\[tern[",
+			expected: "pat\\[tern",
+		},
+	}
+
+	for _, test := range tests {
+		c.Assert(globPrefix(test.pattern), Equals, test.expected)
+	}
+}
+
+func BenchmarkGlob5(b *testing.B) {
+	benchmarkGlob(0, b)
+}
+func BenchmarkGlob15(b *testing.B) {
+	benchmarkGlob(10, b)
+}
+func BenchmarkGlob105(b *testing.B) {
+	benchmarkGlob(100, b)
+}
+func BenchmarkGlob10005(b *testing.B) {
+	benchmarkGlob(10000, b)
+}
+
+func benchmarkGlob(num int, b *testing.B) {
+	index := Index{
+		{Header: Header{Name: "foo"}, Start: 1},
+		{Header: Header{Name: "bar"}, Start: 2},
+		{Header: Header{Name: "dir/file.txt"}, Start: 3},
+		{Header: Header{Name: "dir/file.png"}, Start: 4},
+		{Header: Header{Name: "dir/file.css"}, Start: 5},
+	}
+
+	for i := 0; i < num; i++ {
+		index = append(index, &IndexEntry{Header: Header{Name: strconv.Itoa(i)}})
+	}
+
+	orderedIndex := OrderedIndex(index)
+	orderedIndex.Sort()
+
+	globs := []struct {
+		name string
+		fun  func(string) ([]*IndexEntry, error)
+	}{
+		{
+			name: "normal",
+			fun:  index.Glob,
+		},
+		{
+			name: "ordered",
+			fun:  orderedIndex.Glob,
+		},
+	}
+
+	for _, g := range globs {
+		b.Run(g.name, func(b *testing.B) {
+			for i := 0; i < b.N; i++ {
+				g.fun("dir/*")
+			}
+		})
+	}
+
 }
