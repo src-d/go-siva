@@ -334,6 +334,55 @@ func (o OrderedIndex) Find(path string) *IndexEntry {
 	return nil
 }
 
+func globPrefix(pattern string) string {
+	slash := false
+	for i, c := range pattern {
+		switch c {
+		case '\\':
+			slash = true
+			continue
+		case '*', '?', '[':
+			if !slash {
+				return pattern[:i]
+			}
+		}
+
+		slash = false
+	}
+
+	return pattern
+}
+
+// Glob returns all index entries whose name matches pattern or nil if there is
+// no matching entry. The syntax of patterns is the same as in filepath.Match.
+func (o OrderedIndex) Glob(pattern string) ([]*IndexEntry, error) {
+	pattern = ToSafePath(pattern)
+	prefix := globPrefix(pattern)
+
+	matches := []*IndexEntry{}
+	first := o.Pos(prefix)
+
+	if first == -1 {
+		return matches, nil
+	}
+	for _, e := range o[first:] {
+		if !strings.HasPrefix(e.Name, prefix) {
+			break
+		}
+
+		m, err := path.Match(pattern, e.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		if m {
+			matches = append(matches, e)
+		}
+	}
+
+	return matches, nil
+}
+
 // Sort orders the index lexicographically.
 func (o OrderedIndex) Sort() {
 	sort.Sort(o)

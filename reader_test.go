@@ -82,31 +82,44 @@ func (s *ReaderSuite) TestSeekAndRead(c *C) {
 }
 
 func (s *ReaderSuite) TestIndexGlob(c *C) {
-	s.testIndexGlob(c, "*", []string{
-		"file.txt",
-	})
-	s.testIndexGlob(c, "*/*", []string{
-		"letters/a",
-		"letters/b",
-		"letters/c",
-		"numbers/1",
-		"numbers/2",
-		"numbers/3",
-	})
-	s.testIndexGlob(c, "letters/*", []string{
-		"letters/a",
-		"letters/b",
-		"letters/c",
-	})
-	s.testIndexGlob(c, "numbers\\*", []string{
-		"numbers/1",
-		"numbers/2",
-		"numbers/3",
-	})
-	s.testIndexGlob(c, "nonexistent/*", []string{})
+	s.testIndexGlob(c, false)
 }
 
-func (s *ReaderSuite) testIndexGlob(c *C, pattern string, expected []string) {
+func (s *ReaderSuite) TestIndexGlobOrdered(c *C) {
+	s.testIndexGlob(c, true)
+}
+
+func (s *ReaderSuite) testIndexGlob(c *C, ordered bool) {
+	s.testIndexGlobSingle(c, "*", ordered, []string{
+		"file.txt",
+	})
+	s.testIndexGlobSingle(c, "*/*", ordered, []string{
+		"letters/a",
+		"letters/b",
+		"letters/c",
+		"numbers/1",
+		"numbers/2",
+		"numbers/3",
+	})
+	s.testIndexGlobSingle(c, "letters/*", ordered, []string{
+		"letters/a",
+		"letters/b",
+		"letters/c",
+	})
+	s.testIndexGlobSingle(c, "numbers\\*", ordered, []string{
+		"numbers/1",
+		"numbers/2",
+		"numbers/3",
+	})
+	s.testIndexGlobSingle(c, "nonexistent/*", ordered, []string{})
+}
+
+func (s *ReaderSuite) testIndexGlobSingle(
+	c *C,
+	pattern string,
+	ordered bool,
+	expected []string,
+) {
 	f, err := os.Open("fixtures/dirs.siva")
 	c.Assert(err, IsNil)
 
@@ -115,7 +128,14 @@ func (s *ReaderSuite) testIndexGlob(c *C, pattern string, expected []string) {
 	c.Assert(err, IsNil)
 	c.Assert(i, HasLen, 7)
 
-	matches, err := i.Glob(pattern)
+	var matches []*IndexEntry
+	if ordered {
+		o := OrderedIndex(i)
+		o.Sort()
+		matches, err = o.Glob(pattern)
+	} else {
+		matches, err = i.Glob(pattern)
+	}
 	c.Assert(err, IsNil)
 	matchNames := []string{}
 	for _, match := range matches {
