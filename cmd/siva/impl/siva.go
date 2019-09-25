@@ -1,4 +1,4 @@
-package main
+package impl
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/jessevdk/go-flags"
 )
 
-func main() {
+func Main() {
 	parser := flags.NewNamedParser("siva", flags.Default)
 	parser.AddCommand("pack", "Create a new archive containing the specified items.", "", &CmdPack{})
 	parser.AddCommand("unpack", "Extract to disk from the archive.", "", &CmdUnpack{})

@@ -1,4 +1,4 @@
-package main
+package impl
 
 import (
 	"bytes"
@@ -13,7 +13,7 @@ var _ = Suite(&ListSuite{})
 
 func (s *ListSuite) TestBasic(c *C) {
 	cmd := &CmdList{}
-	cmd.Args.File = "../../fixtures/perms.siva"
+	cmd.Args.File = "../../../fixtures/perms.siva"
 
 	output := captureOutput(func() {
 		err := cmd.Execute(nil)
