@@ -1,4 +1,4 @@
-package main
+package impl
 
 import (
 	"io/ioutil"
@@ -29,7 +29,7 @@ func (s *UnpackSuite) TearDownTest(c *C) {
 func (s *UnpackSuite) TestBasic(c *C) {
 	cmd := &CmdUnpack{}
 	cmd.Output.Path = filepath.Join(s.folder, "files")
-	cmd.Args.File = filepath.Join("..", "..", "fixtures", "perms.siva")
+	cmd.Args.File = filepath.Join("..", "..", "..", "fixtures", "perms.siva")
 	cmd.Overwrite = true
 
 	err := cmd.Execute(nil)
@@ -57,7 +57,7 @@ func (s *UnpackSuite) TestBasic(c *C) {
 func (s *UnpackSuite) TestIgnorePerms(c *C) {
 	cmd := &CmdUnpack{}
 	cmd.Output.Path = filepath.Join(s.folder, "files")
-	cmd.Args.File = filepath.Join("..", "..", "fixtures", "perms.siva")
+	cmd.Args.File = filepath.Join("..", "..", "..", "fixtures", "perms.siva")
 	cmd.IgnorePerms = true
 
 	err := cmd.Execute(nil)
@@ -75,7 +75,7 @@ func (s *UnpackSuite) TestIgnorePerms(c *C) {
 func (s *UnpackSuite) TestMatch(c *C) {
 	cmd := &CmdUnpack{}
 	cmd.Output.Path = filepath.Join(s.folder, "files")
-	cmd.Args.File = filepath.Join("..", "..", "fixtures", "basic.siva")
+	cmd.Args.File = filepath.Join("..", "..", "..", "fixtures", "basic.siva")
 	cmd.Match = "gopher(.*)"
 
 	err := cmd.Execute(nil)
@@ -90,7 +90,7 @@ func (s *UnpackSuite) TestMatch(c *C) {
 func (s *UnpackSuite) TestOverwrite(c *C) {
 	cmd := &CmdUnpack{}
 	cmd.Output.Path = filepath.Join(s.folder, "files")
-	cmd.Args.File = filepath.Join("..", "..", "fixtures", "duplicate.siva")
+	cmd.Args.File = filepath.Join("..", "..", "..", "fixtures", "duplicate.siva")
 	cmd.Overwrite = true
 
 	err := cmd.Execute(nil)
@@ -104,7 +104,7 @@ func (s *UnpackSuite) TestOverwrite(c *C) {
 func (s *UnpackSuite) TestZipSlip(c *C) {
 	cmd := &CmdUnpack{}
 	cmd.Output.Path = filepath.Join(s.folder, "files/inside")
-	cmd.Args.File = filepath.Join("..", "..", "fixtures", "zipslip.siva")
+	cmd.Args.File = filepath.Join("..", "..", "..", "fixtures", "zipslip.siva")
 
 	err := cmd.Execute(nil)
 	c.Assert(err, NotNil)

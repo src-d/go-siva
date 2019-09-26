@@ -1,5 +1,5 @@
 // +build !windows
 
-package main
+package impl
 
 const defaultPerms = 0755
