@@ -70,8 +70,13 @@ func (i *Index) readFooter(r io.Reader) (*IndexFooter, error) {
 func (i *Index) readIndex(r io.Reader, f *IndexFooter, endBlock uint64) error {
 	hr := newHashedReader(r)
 
-	if err := i.readSignature(hr); err != nil {
+	version, err := i.readSignature(hr)
+	if err != nil {
 		return err
+	}
+
+	if version != IndexVersion {
+		return ErrUnsupportedIndexVersion
 	}
 
 	if err := i.readEntries(hr, f, endBlock); err != nil {
@@ -85,26 +90,22 @@ func (i *Index) readIndex(r io.Reader, f *IndexFooter, endBlock uint64) error {
 	return nil
 }
 
-func (i *Index) readSignature(r io.Reader) error {
+func (i *Index) readSignature(r io.Reader) (uint8, error) {
 	sig := make([]byte, 3)
 	if _, err := r.Read(sig); err != nil {
-		return err
+		return 0, err
 	}
 
 	if !bytes.Equal(sig, IndexSignature) {
-		return ErrInvalidSignature
+		return 0, ErrInvalidSignature
 	}
 
 	var version uint8
 	if err := binary.Read(r, binary.BigEndian, &version); err != nil {
-		return err
+		return 0, err
 	}
 
-	if version != IndexVersion {
-		return ErrUnsupportedIndexVersion
-	}
-
-	return nil
+	return version, nil
 }
 
 func (i *Index) readEntries(r io.Reader, f *IndexFooter, endBlock uint64) error {

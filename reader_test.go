@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sort"
 
 	. "gopkg.in/check.v1"
@@ -168,4 +169,14 @@ func (s *ReaderSuite) TestOffset(c *C) {
 	entry := i.Find("gopher.txt")
 	c.Assert(entry, NotNil)
 	c.Assert(entry.Size, Equals, uint64(35))
+}
+
+func (s *IndexSuite) TestUnsupportedIndexVersion(c *C) {
+	f, err := os.Open(filepath.Join("fixtures", "basicv2.siva"))
+	c.Assert(err, IsNil)
+
+	r := NewReader(f)
+	_, err = r.Index()
+	_, ok := err.(*IndexReadError)
+	c.Assert(ok, Equals, true)
 }
